@@ -58,11 +58,18 @@ export function createUI(audio, { say } = {}) {
   // أزرار الصوت والموسيقى (ظاهرة دائمًا)
   const soundBtn = $('#sound-btn');
   const musicBtn = $('#music-btn');
+  // لا نعيد بناء محتوى الزر إلا إذا تغيّرت حالته؛ استبدال العنصر تحت الإصبع أثناء اللمس يُضيع النقرة
+  const setHTML = (el, html) => {
+    if (el.dataset.html !== html) {
+      el.innerHTML = html;
+      el.dataset.html = html;
+    }
+  };
   const renderSound = () => {
-    soundBtn.innerHTML = `${audio.enabled ? ICONS.speaker : ICONS.mute}<span>${audio.enabled ? 'الصوت يعمل' : 'الصوت مكتوم'}</span>`;
+    setHTML(soundBtn, `${audio.enabled ? ICONS.speaker : ICONS.mute}<span>${audio.enabled ? 'الصوت يعمل' : 'الصوت مكتوم'}</span>`);
     soundBtn.setAttribute('aria-pressed', String(!audio.enabled));
     soundBtn.classList.toggle('off', !audio.enabled);
-    musicBtn.innerHTML = `${ICONS.music}<span>${audio.musicEnabled ? 'الموسيقى' : 'بلا موسيقى'}</span>`;
+    setHTML(musicBtn, `${ICONS.music}<span>${audio.musicEnabled ? 'الموسيقى' : 'بلا موسيقى'}</span>`);
     musicBtn.classList.toggle('off', !audio.musicEnabled || !audio.enabled);
     musicBtn.setAttribute('aria-pressed', String(!audio.musicEnabled));
   };

@@ -83,6 +83,8 @@ def main():
             report.append(best)
             print(best.get('score', '-'), l['key'], l['text'], '=>', best.get('heard', ''), flush=True)
     json.dump(report, open(os.path.join(ROOT, 'tools', 'voice', 'report.json'), 'w'), ensure_ascii=False, indent=1)
+    if not a.only:
+        json.dump([{'key': l['key'], 'text': l['text']} for l in lines], open(os.path.join(OUT, 'manifest.json'), 'w'), ensure_ascii=False, indent=1)
     if rec:
         sc = [r['score'] for r in report]
         print(f'mean intelligibility {np.mean(sc):.2f}, below 0.7: {sum(s < 0.7 for s in sc)}')

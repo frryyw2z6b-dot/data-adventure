@@ -80,7 +80,14 @@ export class Audio {
     this.master.gain.value = this.enabled ? 1 : 0;
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 1024;
-    this.master.connect(this.analyser).connect(ctx.destination);
+    // محدِّد أمان يمنع أي تشوّه أو ارتفاع مفاجئ قبل السماعات
+    this.limiter = ctx.createDynamicsCompressor();
+    this.limiter.threshold.value = -6;
+    this.limiter.knee.value = 0;
+    this.limiter.ratio.value = 20;
+    this.limiter.attack.value = 0.003;
+    this.limiter.release.value = 0.15;
+    this.master.connect(this.limiter).connect(this.analyser).connect(ctx.destination);
 
     this.sfx = ctx.createGain();
     this.sfx.gain.value = 0.75;
@@ -104,6 +111,7 @@ export class Audio {
     fb.gain.value = 0.28;
     const lp = ctx.createBiquadFilter();
     lp.frequency.value = 2200;
+    lp.Q.value = -6;
     this.echo.connect(lp).connect(fb).connect(this.echo);
     lp.connect(this.musicBus);
     this.levelBuf = new Float32Array(1024);
@@ -129,10 +137,11 @@ export class Audio {
         }
       }
     }
+    const first = !this.unlocked;
     if (ctx.state !== 'running') ctx.resume().then(() => this.emit()).catch(() => {});
     this.unlocked = true;
     if (this.wantMusic) this.startAmbience();
-    this.emit();
+    if (first) this.emit();
   }
 
   savePrefs() {
@@ -194,8 +203,9 @@ export class Audio {
       .then(
         (data) =>
           new Promise((res, rej) => {
-            // صيغة الاستدعاء القديمة تعمل على Safari القديم أيضًا
-            ctx.decodeAudioData(data, res, rej);
+            // صيغة الاستدعاء القديمة تعمل على Safari القديم أيضًا؛ ونلتقط وعد الصيغة الحديثة حتى لا يُرمى خطأ غير معالج
+            const p = ctx.decodeAudioData(data, res, rej);
+            if (p && typeof p.catch === 'function') p.catch(rej);
           }),
       )
       .then((buf) => {
@@ -357,10 +367,12 @@ export class Audio {
     const delay = this.ctx.createDelay(0.05);
     delay.delayTime.value = 1 / freq;
     const fb = this.ctx.createGain();
-    fb.gain.value = 0.965;
+    fb.gain.value = 0.94;
     const lp = this.ctx.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 2400;
+    // بلا رنين: حلقة التغذية الراجعة يجب أن يبقى كسبها أقل من ١ في كل الترددات وإلا انفجر الصوت
+    lp.Q.value = -6;
     const out = this.ctx.createGain();
     out.gain.setValueAtTime(1, t);
     out.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
