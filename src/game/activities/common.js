@@ -145,3 +145,17 @@ export function layoutSpots(n, { zFront = 1.3, z2 = [0.55, 1.95], maxWidth = 7.4
   }
   return shuffled.map((k) => spots[k]);
 }
+
+/** يربط نشاطًا بإشارة الإلغاء: ينظّف ثم يرفض الوعد */
+export function onAbort(ctx, cleanup, reject) {
+  const sig = ctx.signal;
+  if (!sig) return;
+  sig.addEventListener(
+    'abort',
+    () => {
+      cleanup();
+      reject(new DOMException('stage aborted', 'AbortError'));
+    },
+    { once: true },
+  );
+}

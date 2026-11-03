@@ -596,6 +596,32 @@ td.name {
   padding: 12px 18px 16px;
   border-top: 1px solid var(--line);
 }
+.drawer.small {
+  width: min(420px, calc(100% - 24px));
+}
+.dialog-form {
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.dialog-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+}
+.row-end {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+#sd-confirm {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
 .fatal {
   text-align: center;
   padding: 40px;

@@ -99,6 +99,19 @@
       </div>
     </main>
 
+    <dialog id="class-dialog" class="drawer small">
+      <form id="class-form" class="dialog-form">
+        <h2>فصل جديد</h2>
+        <label>اسم الفصل <input id="class-name" name="name" required maxlength="60" placeholder="مثال: الثاني أ" /></label>
+        <p class="muted">سيُنشأ رمز من ٦ أحرف تعرضينه على الطالبات.</p>
+        <p class="error" id="class-error" hidden></p>
+        <div class="row-end">
+          <button type="button" class="tbtn ghost" data-cancel>إلغاء</button>
+          <button type="submit" class="tbtn">إنشاء الفصل</button>
+        </div>
+      </form>
+    </dialog>
+
     <dialog id="student-dialog" class="drawer">
       <form method="dialog" class="drawer-head">
         <h2 id="sd-name"></h2>
@@ -107,6 +120,11 @@
       <div id="sd-body"></div>
       <div class="drawer-foot">
         <button id="sd-remove" class="tbtn danger">حذف الطالبة وإجاباتها</button>
+        <span id="sd-confirm" hidden>
+          <span class="muted">سيُحذف سجلها نهائيًا.</span>
+          <button id="sd-remove-yes" class="tbtn danger">تأكيد الحذف</button>
+          <button id="sd-remove-no" class="tbtn ghost">تراجع</button>
+        </span>
       </div>
     </dialog>
 

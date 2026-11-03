@@ -515,6 +515,28 @@ body {
   flex-wrap: wrap;
 }
 
+/* التأكيد */
+.screen.dim {
+  background: rgba(43, 35, 71, 0.45);
+}
+.confirm {
+  width: min(460px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+.confirm p {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  line-height: 1.5;
+}
+.confirm .row {
+  justify-content: center;
+}
+
 /* النتائج */
 .results {
   width: min(520px, 100%);

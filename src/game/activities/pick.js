@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { createItem, setGlow, setDim } from '../models.js';
 import { MAX_TRIES } from '../../shared/scoring.js';
-import { PRAISE, TRY_AGAIN, pickOne, shake, hop, dropIn } from './common.js';
+import { PRAISE, TRY_AGAIN, pickOne, shake, hop, dropIn, onAbort } from './common.js';
 
 export function runPick(ctx, q) {
   const { engine, board, pointer, audio, fx, ui } = ctx;
@@ -23,7 +23,7 @@ export function runPick(ctx, q) {
   let hovered = null;
   let locked = false;
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const unlisten = engine.onUpdate((dt, t) => {
       for (const it of items) {
         if (tried.has(it.userData.itemId)) continue;
@@ -88,6 +88,15 @@ export function runPick(ctx, q) {
       },
     });
 
+    onAbort(
+      ctx,
+      () => {
+        locked = true;
+        pointer.clear();
+        unlisten();
+      },
+      reject,
+    );
     dropIn(engine, audio, items);
     ctx.debug.current = { type: 'pick', items };
   });

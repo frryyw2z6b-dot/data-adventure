@@ -174,6 +174,31 @@ export function createUI(audio) {
       el.querySelector('[data-leave]').addEventListener('click', onLeave);
     },
 
+    /** نافذة تأكيد داخل اللعبة (بديل confirm) */
+    confirm(text, yes = 'نعم', no = 'لا') {
+      return new Promise((resolve) => {
+        const el = show(`
+          <section class="screen center dim">
+            <div class="card confirm" role="alertdialog" aria-modal="true">
+              <div class="avatar">${FALCON_SVG}</div>
+              <p>${esc(text)}</p>
+              <div class="row">
+                <button class="btn primary" data-no>${esc(no)}</button>
+                <button class="btn ghost" data-yes>${esc(yes)}</button>
+              </div>
+            </div>
+          </section>`);
+        const done = (v) => {
+          audio.tap();
+          clear();
+          resolve(v);
+        };
+        el.querySelector('[data-yes]').addEventListener('click', () => done(true), { once: true });
+        el.querySelector('[data-no]').addEventListener('click', () => done(false), { once: true });
+        el.querySelector('[data-no]').focus();
+      });
+    },
+
     guideDialog(text, button = 'هيا نبدأ!') {
       return new Promise((resolve) => {
         const el = show(`

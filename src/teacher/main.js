@@ -89,7 +89,11 @@ async function boot() {
   $('#toggle-class').addEventListener('click', toggleClass);
   $('#export').addEventListener('click', exportCsv);
   $('#search').addEventListener('input', render);
-  $('#sd-remove').addEventListener('click', removeStudent);
+  $('#sd-remove').addEventListener('click', () => askRemove(true));
+  $('#sd-remove-no').addEventListener('click', () => askRemove(false));
+  $('#sd-remove-yes').addEventListener('click', removeStudent);
+  $('#class-form').addEventListener('submit', submitClass);
+  $('#class-dialog [data-cancel]').addEventListener('click', () => $('#class-dialog').close());
   setInterval(render, 30000); // تحديث «آخر نشاط»
 }
 
@@ -140,14 +144,27 @@ function selectClass(code) {
   render();
 }
 
-async function createClass() {
-  const name = prompt('اسم الفصل (مثال: الثاني أ):', 'الثاني أ');
-  if (!name) return;
+function createClass() {
+  const dlg = $('#class-dialog');
+  $('#class-form').reset();
+  $('#class-error').hidden = true;
+  dlg.showModal();
+  $('#class-name').focus();
+}
+
+async function submitClass(e) {
+  e.preventDefault();
+  const btn = e.target.querySelector('[type=submit]');
+  btn.disabled = true;
   try {
-    const cls = await state.backend.createClass(name);
+    const cls = await state.backend.createClass($('#class-name').value);
+    $('#class-dialog').close();
     await loadClasses(cls.code);
   } catch (err) {
-    alert(errorMessage(err));
+    $('#class-error').textContent = errorMessage(err);
+    $('#class-error').hidden = false;
+  } finally {
+    btn.disabled = false;
   }
 }
 
@@ -268,6 +285,7 @@ function openStudent(uid) {
   renderStudent(uid);
   const dlg = $('#student-dialog');
   if (!dlg.open) dlg.showModal();
+  askRemove(false);
   dlg.addEventListener('close', () => (state.openStudent = null), { once: true });
 }
 
@@ -292,11 +310,16 @@ function renderStudent(uid) {
     </ol>`;
 }
 
+function askRemove(show) {
+  $('#sd-remove').hidden = show;
+  $('#sd-confirm').hidden = !show;
+}
+
 async function removeStudent() {
   const uid = state.openStudent;
-  const s = state.students.find((x) => x.uid === uid);
-  if (!uid || !confirm(`حذف «${s?.name || ''}» وكل إجاباتها من هذا الفصل؟`)) return;
+  if (!uid) return;
   await state.backend.removeStudent(state.current.code, uid);
+  askRemove(false);
   $('#student-dialog').close();
 }
 

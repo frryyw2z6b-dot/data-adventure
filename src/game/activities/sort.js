@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { createItem, createBasket, setGlow } from '../models.js';
 import { MAX_TRIES } from '../../shared/scoring.js';
-import { PRAISE, TRY_AGAIN, pickOne, arcTo, shake, dropIn, layoutSpots, hop } from './common.js';
+import { PRAISE, TRY_AGAIN, pickOne, arcTo, shake, dropIn, layoutSpots, hop, onAbort } from './common.js';
 import { ease } from '../tween.js';
 
 const DRAG_Y = 0.85;
@@ -115,7 +115,11 @@ export function runSort(ctx, q) {
   }
 
   let finishResolve;
-  const done = new Promise((r) => (finishResolve = r));
+  let finishReject;
+  const done = new Promise((res, rej) => {
+    finishResolve = res;
+    finishReject = rej;
+  });
 
   async function evaluate(it, basket) {
     const id = it.userData.itemId;
@@ -237,9 +241,19 @@ export function runSort(ctx, q) {
     baskets.forEach((b, i) => setTimeout(() => (b.userData.targetScale = 1), i * 150));
     await engine.tweens.wait(0.5);
     await dropIn(engine, audio, items);
+    if (ctx.signal?.aborted) return;
     pointer.set(handlers);
     ctx.debug.current.ready = true;
   })();
+
+  onAbort(
+    ctx,
+    () => {
+      pointer.clear();
+      unlisten?.();
+    },
+    (e) => finishReject(e),
+  );
 
   // للاختبار الآلي والمعاينة
   ctx.debug.current = {

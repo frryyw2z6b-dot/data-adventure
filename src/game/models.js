@@ -277,15 +277,15 @@ export function createBasket(bin) {
     new THREE.SpriteMaterial({ map: labelTexture(bin.label, { color: bandColor }), depthTest: false, transparent: true }),
   );
   label.scale.set(1.9, 0.6, 1);
-  label.position.set(0, 1.3, 0);
+  label.position.set(0, 1.5, 0);
   label.renderOrder = 10;
   group.add(label);
 
   // أيقونة صغيرة (اختيارية) على عمود أمام السلة
   if (bin.icon) {
     const icon = createItem({ ...bin.icon, id: `icon-${bin.id}` });
-    icon.scale.setScalar(0.5);
-    icon.position.set(0, 0.62, 0.78);
+    icon.scale.setScalar(0.6);
+    icon.position.set(0, 0.9, 0.62);
     icon.userData.isIcon = true;
     icon.traverse((o) => (o.userData.itemId = undefined));
     group.add(icon);

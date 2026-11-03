@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { createItem, createGroupRing } from '../models.js';
 import { MAX_TRIES } from '../../shared/scoring.js';
-import { PRAISE, TRY_AGAIN, pickOne, dropIn, hop } from './common.js';
+import { PRAISE, TRY_AGAIN, pickOne, dropIn, hop, onAbort } from './common.js';
 
 export function runChoice(ctx, q) {
   const { engine, board, audio, fx, ui } = ctx;
@@ -27,7 +27,7 @@ export function runChoice(ctx, q) {
   });
 
   const attempts = [];
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let busy = false;
     const unlisten = engine.onUpdate((dt) => all.forEach((it) => (it.userData.holder.rotation.y += dt * 0.5)));
     const done = async (revealed) => {
@@ -60,6 +60,15 @@ export function runChoice(ctx, q) {
         }
       }
     });
+    onAbort(
+      ctx,
+      () => {
+        busy = true;
+        unlisten();
+        panel.hide();
+      },
+      reject,
+    );
     dropIn(engine, audio, all);
     ctx.debug.current = { type: 'choice', items: all };
   });

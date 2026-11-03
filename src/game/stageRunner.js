@@ -7,8 +7,15 @@ import { scoreQuestion, starsFor } from '../shared/scoring.js';
 
 const ACTIVITIES = { sort: runSort, pick: runPick, choice: runChoice };
 
-export async function runStage(ctx, stage, { onHome }) {
+/** يعيد عدد النجوم، أو null إذا خرجت الطالبة إلى الخريطة قبل الإنهاء */
+export async function runStage(ctx, stage) {
   const { ui, director, audio, engine, fx, board, backend } = ctx;
+  const controller = new AbortController();
+  ctx.signal = controller.signal;
+  const onHome = async () => {
+    const leave = await ui.confirm('هل تريدين العودة إلى الخريطة؟ ستبدئين هذه المرحلة من أولها لاحقًا.', 'نعم، إلى الخريطة', 'أكملي اللعب');
+    if (leave) controller.abort();
+  };
   const content = stage.content;
   const questions = content.questions.filter((q) => ACTIVITIES[q.type]);
 
@@ -30,7 +37,16 @@ export async function runStage(ctx, stage, { onHome }) {
     ui.progress(i, questions.length);
     ui.prompt(q.prompt);
     ctx.debug.qIndex = i;
-    const result = await ACTIVITIES[q.type](ctx, q);
+    let result;
+    try {
+      result = await ACTIVITIES[q.type](ctx, q);
+    } catch (err) {
+      if (err?.name !== 'AbortError') throw err;
+      ui.hideHud();
+      ui.clear();
+      await clearBoard(engine, board);
+      return null;
+    }
     // تُرسل المحاولات الخام فقط؛ الدرجة الرسمية تُحسب في لوحة المعلمة
     backend
       .recordAnswer({

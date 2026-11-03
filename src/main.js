@@ -116,14 +116,11 @@ async function boot() {
     const stage = getStage(id);
     if (!stage?.available) return;
     ui.clear();
-    const stars = await runStage(ctx, stage, {
-      onHome: () => {
-        if (confirm('هل تريدين العودة إلى الخريطة؟ ستبدئين هذه المرحلة من جديد لاحقًا.')) {
-          sessionStorage.setItem('da:goto', 'map');
-          location.reload();
-        }
-      },
-    });
+    const stars = await runStage(ctx, stage);
+    if (stars == null) {
+      goMap();
+      return;
+    }
     const progress = loadProgress(session);
     progress.stars[id] = Math.max(progress.stars[id] || 0, stars);
     saveProgress(session, progress);
@@ -135,15 +132,6 @@ async function boot() {
       onReplay: () => playStage(id),
     });
   };
-
-  const gotoMap = sessionStorage.getItem('da:goto') === 'map';
-  sessionStorage.removeItem('da:goto');
-  if (gotoMap && session) {
-    director.setMode('aerial');
-    goMap();
-    document.addEventListener('pointerdown', () => { audio.unlock(); audio.startAmbience(); }, { once: true });
-    return;
-  }
 
   await ui.titleScreen();
   audio.unlock();
