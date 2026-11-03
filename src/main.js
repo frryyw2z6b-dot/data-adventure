@@ -63,6 +63,7 @@ async function boot() {
   const noura = createNoura(engine, audio);
   audio.onSpeaking = (on) => noura.setTalking(on);
   const say = (text) => audio.say(text);
+  if (new URLSearchParams(location.search).has('audiodebug')) import('./game/audioDebug.js').then((m) => m.mountAudioDebug(audio));
   const ui = createUI(audio, { say });
   const pointer = createPointer(engine);
   const board = new THREE.Group();

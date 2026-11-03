@@ -10,6 +10,29 @@
 // • الموسيقى تنخفض تلقائيًا أثناء كلام نورة.
 import { voiceKey } from '../shared/voiceKey.js';
 
+/** ملف WAV صامت قصير (لعنصر <audio> الذي يفتح جلسة التشغيل في iOS القديم) */
+function silentWav() {
+  const n = 2205; // ٠٫١ ثانية بتردد 22050
+  const buf = new ArrayBuffer(44 + n * 2);
+  const v = new DataView(buf);
+  const str = (o, t) => [...t].forEach((c, i) => v.setUint8(o + i, c.charCodeAt(0)));
+  str(0, 'RIFF');
+  v.setUint32(4, 36 + n * 2, true);
+  str(8, 'WAVEfmt ');
+  v.setUint32(16, 16, true);
+  v.setUint16(20, 1, true);
+  v.setUint16(22, 1, true);
+  v.setUint32(24, 22050, true);
+  v.setUint32(28, 44100, true);
+  v.setUint16(32, 2, true);
+  v.setUint16(34, 16, true);
+  str(36, 'data');
+  v.setUint32(40, n * 2, true);
+  let bin = '';
+  new Uint8Array(buf).forEach((b) => (bin += String.fromCharCode(b)));
+  return 'data:audio/wav;base64,' + btoa(bin);
+}
+
 const HIJAZ_D = [293.66, 311.13, 369.99, 392.0, 440.0, 466.16, 523.25, 587.33];
 const PREF_KEY = 'da:v1:audio';
 const VOICE_BASE = new URL('./voice/', document.baseURI).href;
@@ -46,15 +69,20 @@ export class Audio {
       speechSynthesis.addEventListener?.('voiceschanged', pick);
     }
 
-    // فتح الصوت عند أول تفاعل في أي مكان من الصفحة
+    this.raw = new Map(); // ملفات صوت محمّلة قبل وجود سياق الصوت (لم تُفك بعد)
+    this.lastError = '';
+
+    // فتح الصوت داخل أحداث «تفعيل المستخدم» فقط. في Safari على iPad لا يُعدّ pointerdown باللمس
+    // تفعيلًا، فلا نستخدمه؛ ونكرر المحاولة مع كل لمسة حتى تصبح حالة السياق running فعلًا.
     const unlock = () => this.unlock();
-    for (const ev of ['pointerdown', 'touchend', 'keydown', 'click']) {
+    for (const ev of ['touchend', 'pointerup', 'click', 'keydown']) {
       window.addEventListener(ev, unlock, { capture: true, passive: true });
     }
     document.addEventListener('visibilitychange', () => {
       if (!this.ctx) return;
-      if (document.hidden) this.ctx.suspend?.();
-      else if (this.unlocked) this.ctx.resume?.();
+      if (document.hidden) this.ctx.suspend?.().catch(() => {});
+      // الاستئناف خارج اللمس قد يُرفض على iPad؛ اللمسة التالية تستأنفه عبر unlock()
+      else this.ctx.resume?.().catch(() => {});
     });
   }
 
@@ -70,12 +98,19 @@ export class Audio {
     for (const fn of this.listeners) fn(this);
   }
 
-  ensureContext() {
-    if (this.ctx) return this.ctx;
+  /** يُنشأ السياق داخل لمسة المستخدم فقط (create=true من unlock)؛ إنشاؤه عند تحميل الصفحة يجعله معلّقًا على iPad */
+  ensureContext(create = false) {
+    if (this.ctx || !create) return this.ctx;
     const Ctx = window.AudioContext || window.webkitAudioContext;
     if (!Ctx) return null;
-    const ctx = new Ctx({ latencyHint: 'interactive' });
+    let ctx;
+    try {
+      ctx = new Ctx({ latencyHint: 'interactive' });
+    } catch {
+      ctx = new Ctx(); // Safari القديم لا يقبل خيارات
+    }
     this.ctx = ctx;
+    ctx.onstatechange = () => this.onState();
     this.master = ctx.createGain();
     this.master.gain.value = this.enabled ? 1 : 0;
     this.analyser = ctx.createAnalyser();
@@ -118,30 +153,61 @@ export class Audio {
     return ctx;
   }
 
-  /** تُستدعى داخل حدث لمس/نقر: تفتح الصوت (ومنه صوت iOS الصامت) */
+  /** تُستدعى داخل حدث لمس/نقر/ضغطة مفتاح (تفعيل المستخدم) */
   unlock() {
-    const ctx = this.ensureContext();
+    this.setPlaybackSession();
+    const ctx = this.ensureContext(true);
     if (!ctx) return;
-    if (!this.unlocked) {
-      // تشغيل عيّنة صامتة داخل حدث المستخدم يفتح الصوت في Safari على iPad
-      const b = ctx.createBuffer(1, 1, 22050);
-      const s = ctx.createBufferSource();
-      s.buffer = b;
-      s.connect(ctx.destination);
-      s.start(0);
-      if ('speechSynthesis' in window) {
-        try {
-          speechSynthesis.cancel();
-        } catch {
-          /* ignore */
-        }
+    if (ctx.state !== 'running') {
+      // عيّنة صامتة + resume() داخل الحدث نفسه: الطريقة التي يقبلها Safari على iPad
+      try {
+        const s = ctx.createBufferSource();
+        s.buffer = ctx.createBuffer(1, 1, ctx.sampleRate);
+        s.connect(ctx.destination);
+        s.start(0);
+      } catch (e) {
+        this.lastError = 'silent-buffer: ' + e.message;
       }
+      const p = ctx.resume?.();
+      if (p && p.catch) p.catch((e) => (this.lastError = 'resume: ' + (e?.message || e)));
     }
-    const first = !this.unlocked;
-    if (ctx.state !== 'running') ctx.resume().then(() => this.emit()).catch(() => {});
-    this.unlocked = true;
-    if (this.wantMusic) this.startAmbience();
-    if (first) this.emit();
+    this.decodePending();
+    this.onState();
+  }
+
+  /**
+   * في iPadOS يتبع Web Audio وضع «الصامت» في الجهاز (فئة ambient) فلا يُسمع شيء.
+   * نطلب فئة playback (Safari 16.4+)، وفي الإصدارات الأقدم نشغّل عنصر <audio> صامتًا
+   * داخل اللمسة لأن عناصر الوسائط تحوّل جلسة الصوت إلى playback.
+   */
+  setPlaybackSession() {
+    try {
+      if (navigator.audioSession && navigator.audioSession.type !== 'playback') navigator.audioSession.type = 'playback';
+    } catch (e) {
+      this.lastError = 'audioSession: ' + e.message;
+    }
+    if (navigator.audioSession || !/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent) || !('ontouchend' in document)) return;
+    if (!this.sessionEl) {
+      const el = document.createElement('audio');
+      el.setAttribute('playsinline', '');
+      el.setAttribute('x-webkit-airplay', 'deny');
+      el.loop = true;
+      el.preload = 'auto';
+      el.src = silentWav();
+      this.sessionEl = el;
+    }
+    if (this.sessionEl.paused) this.sessionEl.play().catch((e) => (this.lastError = 'session-audio: ' + e.message));
+  }
+
+  /** عند تغيّر حالة السياق: نبدأ الموسيقى المؤجلة ونحدّث الواجهة */
+  onState() {
+    const running = this.ctx?.state === 'running';
+    if (running && !this.unlocked) {
+      this.unlocked = true;
+      this.decodePending();
+    }
+    if (running && this.wantMusic && !this.musicOn) this.startAmbience();
+    this.emit();
   }
 
   savePrefs() {
@@ -190,24 +256,34 @@ export class Audio {
     return VOICE_BASE + voiceKey(text) + '.mp3';
   }
 
+  fetchClip(key, text) {
+    if (this.raw.has(key)) return this.raw.get(key);
+    const p = fetch(this.clipUrl(text)).then((r) => {
+      if (!r.ok) throw new Error('clip ' + r.status);
+      return r.arrayBuffer();
+    });
+    p.catch(() => this.raw.delete(key));
+    this.raw.set(key, p);
+    return p;
+  }
+
+  decode(data) {
+    return new Promise((res, rej) => {
+      // صيغة الاستدعاء القديمة تعمل على Safari القديم أيضًا؛ ونلتقط وعد الصيغة الحديثة حتى لا يُرمى خطأ غير معالج
+      // slice: Safari يستهلك المخزن عند فكّه، فنعطيه نسخة
+      const p = this.ctx.decodeAudioData(data.slice(0), res, rej);
+      if (p && typeof p.catch === 'function') p.catch(rej);
+    });
+  }
+
   loadClip(text) {
     const key = voiceKey(text);
     if (this.buffers.has(key)) return Promise.resolve(this.buffers.get(key));
     if (this.pending.has(key)) return this.pending.get(key);
-    const ctx = this.ensureContext();
-    const p = fetch(this.clipUrl(text))
-      .then((r) => {
-        if (!r.ok) throw new Error('clip ' + r.status);
-        return r.arrayBuffer();
-      })
-      .then(
-        (data) =>
-          new Promise((res, rej) => {
-            // صيغة الاستدعاء القديمة تعمل على Safari القديم أيضًا؛ ونلتقط وعد الصيغة الحديثة حتى لا يُرمى خطأ غير معالج
-            const p = ctx.decodeAudioData(data, res, rej);
-            if (p && typeof p.catch === 'function') p.catch(rej);
-          }),
-      )
+    const raw = this.fetchClip(key, text);
+    if (!this.ctx) return raw.then(() => Promise.reject(new Error('no-audio-context')));
+    const p = raw
+      .then((data) => this.decode(data))
       .then((buf) => {
         this.buffers.set(key, buf);
         this.pending.delete(key);
@@ -215,15 +291,28 @@ export class Audio {
       })
       .catch((err) => {
         this.pending.delete(key);
+        this.lastError = 'clip: ' + (err?.message || err);
         throw err;
       });
     this.pending.set(key, p);
     return p;
   }
 
+  /** بعد إنشاء السياق: فك الملفات التي حُمّلت مسبقًا */
+  decodePending() {
+    if (!this.ctx || !this.preloadTexts) return;
+    for (const t of this.preloadTexts) this.loadClip(t).catch(() => {});
+    this.preloadTexts.clear();
+  }
+
   /** تحميل مسبق لجمل المرحلة حتى تُنطق فورًا */
   preload(texts) {
-    for (const t of texts) this.loadClip(t).catch(() => {});
+    this.preloadTexts ||= new Set();
+    for (const t of texts) {
+      this.fetchClip(voiceKey(t), t).catch(() => {});
+      if (this.ctx) this.loadClip(t).catch(() => {});
+      else this.preloadTexts.add(t);
+    }
   }
 
   stopVoice() {
@@ -251,12 +340,13 @@ export class Audio {
   say(text) {
     this.stopVoice();
     if (!this.enabled || !text) return Promise.resolve();
-    const ctx = this.ensureContext();
+    const ctx = this.ctx;
+    if (!ctx) return Promise.resolve(); // قبل أول لمسة لا يمكن تشغيل أي صوت
+    if (ctx.state !== 'running') ctx.resume?.().catch(() => {});
     const token = {};
     this.current = token;
     return new Promise((resolve) => {
       token.resolve = resolve;
-      if (!ctx) return this.sayDevice(text, token, resolve);
       this.loadClip(text)
         .then((buf) => {
           if (this.current !== token) return resolve();
@@ -310,9 +400,9 @@ export class Audio {
     return buf;
   }
 
-  /** بعد أول تفاعل تُجدوَل الأصوات حتى لو كان السياق ما زال يستأنف */
+  /** لا نجدول أصواتًا إلا والسياق يعمل فعلًا (وإلا تتراكم وتنطلق دفعة واحدة لاحقًا) */
   ready() {
-    return Boolean(this.ctx && this.unlocked && this.ctx.state !== 'closed');
+    return this.ctx?.state === 'running';
   }
 
   get canSpeak() {
