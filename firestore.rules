@@ -1,0 +1,143 @@
+rules_version = '2';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// قواعد أمان «مغامرة مستكشفي البيانات»
+//
+// الأدوار:
+//   • الطالبة: تدخل بحساب مجهول (Anonymous Auth) ثم تنضم إلى فصل برمز الفصل.
+//   • المعلمة: تدخل بالبريد وكلمة المرور، ويجب أن يوجد لها مستند في /teachers/{uid}
+//     يُضاف يدويًا من Firebase Console (لا يمكن لأي أحد أن يمنح نفسه صفة معلمة).
+//
+// المبادئ:
+//   1) الطالبة لا تقرأ أي إجابات ولا بيانات طالبة أخرى.
+//   2) الإجابة تُكتب مرة واحدة ولا تُعدَّل ولا تُحذف من الطالبة (سجل إلحاقي فقط).
+//   3) لا تُخزَّن «درجة» من جهاز الطالبة إطلاقًا؛ الدرجة تُحسب في لوحة المعلمة
+//      من الإجابات الخام ومفتاح الإجابة.
+//   4) المعلمة ترى فصولها فقط، ولا ترى فصول معلمة أخرى.
+// ─────────────────────────────────────────────────────────────────────────────
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAnonymous() {
+      return request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    function isTeacher() {
+      return signedIn()
+        && !isAnonymous()
+        && exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
+    }
+
+    function classData(code) {
+      return get(/databases/$(database)/documents/classes/$(code)).data;
+    }
+
+    function ownsClass(code) {
+      return isTeacher() && classData(code).teacherUid == request.auth.uid;
+    }
+
+    function classIsActive(code) {
+      return classData(code).active == true;
+    }
+
+    function isStudentOf(code) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/classes/$(code)/students/$(request.auth.uid));
+    }
+
+    function isShortString(v, minLen, maxLen) {
+      return v is string && v.size() >= minLen && v.size() <= maxLen;
+    }
+
+    // ── المعلمات: قائمة سماح تُدار من Firebase Console فقط ──
+    match /teachers/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ── الفصول ──
+    match /classes/{code} {
+      // الطالبة تحتاج قراءة مستند الفصل لتتحقق من الرمز، لكنها لا تستطيع سرد الفصول.
+      allow get: if signedIn();
+      allow list: if isTeacher() && resource.data.teacherUid == request.auth.uid;
+
+      allow create: if isTeacher()
+        && code.matches('^[A-HJ-NP-Z2-9]{6}$')
+        && request.resource.data.keys().hasOnly(['teacherUid', 'name', 'active', 'createdAt'])
+        && request.resource.data.keys().hasAll(['teacherUid', 'name', 'active', 'createdAt'])
+        && request.resource.data.teacherUid == request.auth.uid
+        && isShortString(request.resource.data.name, 1, 60)
+        && request.resource.data.active is bool
+        && request.resource.data.createdAt == request.time;
+
+      allow update: if ownsClass(code)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'active'])
+        && isShortString(request.resource.data.name, 1, 60)
+        && request.resource.data.active is bool;
+
+      allow delete: if false;
+
+      // ── الطالبات المنضمات إلى الفصل ──
+      match /students/{uid} {
+        allow get: if signedIn() && (request.auth.uid == uid || ownsClass(code));
+        allow list: if ownsClass(code);
+
+        allow create: if signedIn()
+          && request.auth.uid == uid
+          && classIsActive(code)
+          && request.resource.data.keys().hasOnly(['name', 'stage', 'joinedAt', 'updatedAt'])
+          && request.resource.data.keys().hasAll(['name', 'stage', 'joinedAt', 'updatedAt'])
+          && isShortString(request.resource.data.name, 1, 30)
+          && request.resource.data.stage == 0
+          && request.resource.data.joinedAt == request.time
+          && request.resource.data.updatedAt == request.time;
+
+        // الطالبة تحدّث فقط رقم المرحلة التي وصلت إليها (للأمام فقط) ووقت التحديث.
+        allow update: if signedIn()
+          && request.auth.uid == uid
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['stage', 'updatedAt'])
+          && request.resource.data.stage is int
+          && request.resource.data.stage >= resource.data.stage
+          && request.resource.data.stage <= 5
+          && request.resource.data.updatedAt == request.time;
+
+        // المعلمة يمكنها إزالة طالبة من فصلها.
+        allow delete: if ownsClass(code);
+      }
+
+      // ── الإجابات: سجل إلحاقي (إنشاء فقط) ──
+      match /answers/{answerId} {
+        allow read: if ownsClass(code);
+
+        allow create: if isStudentOf(code)
+          && classIsActive(code)
+          && request.resource.data.keys().hasOnly(['uid', 'stageId', 'questionId', 'attempts', 'revealed', 'contentVersion', 'ts'])
+          && request.resource.data.keys().hasAll(['uid', 'stageId', 'questionId', 'attempts', 'revealed', 'contentVersion', 'ts'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.stageId is int
+          && request.resource.data.stageId >= 1
+          && request.resource.data.stageId <= 5
+          && isShortString(request.resource.data.questionId, 1, 64)
+          && request.resource.data.attempts is list
+          && request.resource.data.attempts.size() >= 1
+          && request.resource.data.attempts.size() <= 80
+          && request.resource.data.revealed is bool
+          && isShortString(request.resource.data.contentVersion, 1, 32)
+          && request.resource.data.ts == request.time;
+
+        allow update: if false;
+        // المعلمة فقط تستطيع حذف سجلات فصلها (مثلًا لإعادة ضبط تجربة).
+        allow delete: if ownsClass(code);
+      }
+    }
+
+    // كل ما عدا ذلك مغلق.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

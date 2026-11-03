@@ -1,0 +1,22 @@
+export class BackendError extends Error {
+  constructor(code, message) {
+    super(message || code);
+    this.code = code;
+  }
+}
+
+// رسائل عربية مفهومة لكل خطأ
+export const ERROR_MESSAGES = {
+  'class-not-found': 'رمز الفصل غير صحيح. تأكدي منه مع معلمتك.',
+  'class-inactive': 'هذا الفصل مغلق الآن. اطلبي من معلمتك فتحه.',
+  'bad-name': 'اكتبي اسمك من فضلك.',
+  'bad-code': 'رمز الفصل يتكون من 6 أحرف وأرقام إنجليزية.',
+  'not-teacher': 'هذا الحساب غير مسجَّل كمعلمة في المشروع.',
+  'auth-failed': 'البريد أو كلمة المرور غير صحيحة.',
+  network: 'تعذّر الاتصال بالإنترنت. ستُحفَظ الإجابات وتُرسَل عند عودة الاتصال.',
+  unknown: 'حدث خطأ غير متوقع. حاولي مرة أخرى.',
+};
+
+export function errorMessage(err) {
+  return ERROR_MESSAGES[err?.code] || ERROR_MESSAGES.unknown;
+}

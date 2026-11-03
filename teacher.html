@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>لوحة المعلمة · مستكشفو البيانات</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='8' y='30' width='10' height='26' fill='%231f6b45'/%3E%3Crect x='27' y='16' width='10' height='40' fill='%23e0a83a'/%3E%3Crect x='46' y='24' width='10' height='32' fill='%23a3262a'/%3E%3C/svg%3E" />
+  </head>
+  <body class="teacher">
+    <header class="topbar">
+      <div class="brand">
+        <span class="logo" aria-hidden="true"><i></i><i></i><i></i></span>
+        <div>
+          <h1>لوحة المعلمة</h1>
+          <p>مغامرة مستكشفي البيانات</p>
+        </div>
+      </div>
+      <div class="top-actions">
+        <span id="mode-pill" class="pill" hidden></span>
+        <span id="who" class="who"></span>
+        <button id="logout" class="tbtn ghost" hidden>تسجيل الخروج</button>
+      </div>
+    </header>
+
+    <section id="login-view" class="login" hidden>
+      <form class="panel login-card" id="login-form">
+        <h2>دخول المعلمة</h2>
+        <p class="muted">استخدمي البريد وكلمة المرور المسجَّلين في المشروع.</p>
+        <label>البريد الإلكتروني <input type="email" name="email" required autocomplete="username" dir="ltr" /></label>
+        <label>كلمة المرور <input type="password" name="password" required autocomplete="current-password" dir="ltr" /></label>
+        <p class="error" id="login-error" hidden></p>
+        <button class="tbtn primary" type="submit">دخول</button>
+      </form>
+    </section>
+
+    <main id="app-view" hidden>
+      <section class="classbar panel">
+        <div class="class-pick">
+          <label for="class-select">الفصل</label>
+          <select id="class-select"></select>
+          <button id="new-class" class="tbtn ghost">+ فصل جديد</button>
+        </div>
+        <div class="class-code">
+          <span>رمز الفصل للطالبات</span>
+          <strong id="class-code" dir="ltr">——</strong>
+        </div>
+        <div class="class-state">
+          <span id="live" class="live"><i></i>مباشر</span>
+          <button id="toggle-class" class="tbtn ghost"></button>
+          <button id="export" class="tbtn">تصدير النتائج (CSV)</button>
+        </div>
+      </section>
+
+      <p id="draft-note" class="note" hidden></p>
+
+      <section class="kpis">
+        <div class="kpi"><span>الطالبات المنضمات</span><strong id="k-students">٠</strong></div>
+        <div class="kpi"><span>إجابات مستلمة</span><strong id="k-answers">٠</strong></div>
+        <div class="kpi"><span>متوسط الفصل</span><strong id="k-avg">—</strong></div>
+        <div class="kpi"><span>أنهين المرحلة الأولى</span><strong id="k-done">٠</strong></div>
+      </section>
+
+      <div class="grid">
+        <section class="panel">
+          <div class="panel-head">
+            <h2>نتائج الطالبات</h2>
+            <input id="search" type="search" placeholder="ابحثي عن طالبة" />
+          </div>
+          <div class="table-wrap">
+            <table id="students-table">
+              <thead>
+                <tr>
+                  <th>الطالبة</th>
+                  <th>المرحلة</th>
+                  <th>الأسئلة</th>
+                  <th>الدرجة</th>
+                  <th>من أول محاولة</th>
+                  <th>آخر نشاط</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+            <p id="empty-students" class="empty">لم تنضم أي طالبة بعد. اعرضي رمز الفصل على السبورة.</p>
+          </div>
+        </section>
+
+        <aside class="side">
+          <section class="panel">
+            <h2>آخر الإجابات</h2>
+            <ol id="feed" class="feed"></ol>
+            <p class="legend"><span><i class="res ok">✓</i>من أول محاولة</span><span><i class="res part">↻</i>بعد إعادة المحاولة</span><span><i class="res no">✗</i>لم تصل للإجابة</span></p>
+          </section>
+          <section class="panel">
+            <h2>أداء الفصل في كل سؤال</h2>
+            <ol id="questions" class="qlist"></ol>
+          </section>
+        </aside>
+      </div>
+    </main>
+
+    <dialog id="student-dialog" class="drawer">
+      <form method="dialog" class="drawer-head">
+        <h2 id="sd-name"></h2>
+        <button class="tbtn ghost" aria-label="إغلاق">إغلاق</button>
+      </form>
+      <div id="sd-body"></div>
+      <div class="drawer-foot">
+        <button id="sd-remove" class="tbtn danger">حذف الطالبة وإجاباتها</button>
+      </div>
+    </dialog>
+
+    <script type="module" src="/src/teacher/main.js"></script>
+  </body>
+</html>

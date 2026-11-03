@@ -1,0 +1,93 @@
+{
+  "version": "s1-draft-1",
+  "status": "draft",
+  "note": "أسئلة تجريبية لاختبار آلية اللعب فقط — تُستبدل بأسئلة الكتاب بعد مراجعة المعلمة.",
+  "intro": "أهلًا بكِ يا مستكشفة! في واحة النخيل أشياء كثيرة مختلطة. ساعديني على فرزها في السلال.",
+  "questions": [
+    {
+      "id": "s1-q1",
+      "type": "sort",
+      "prompt": "ضعي كل كرة في السلة التي لها اللون نفسه.",
+      "bins": [
+        { "id": "red", "label": "أحمر", "color": "red" },
+        { "id": "yellow", "label": "أصفر", "color": "yellow" }
+      ],
+      "items": [
+        { "id": "a", "model": "ball", "color": "red", "bin": "red" },
+        { "id": "b", "model": "ball", "color": "yellow", "bin": "yellow" },
+        { "id": "c", "model": "ball", "color": "red", "bin": "red" },
+        { "id": "d", "model": "ball", "color": "yellow", "bin": "yellow" },
+        { "id": "e", "model": "ball", "color": "yellow", "bin": "yellow" }
+      ]
+    },
+    {
+      "id": "s1-q2",
+      "type": "sort",
+      "prompt": "افرزي الأشياء حسب الشكل: الكرات في سلة، والمكعبات في سلة.",
+      "bins": [
+        { "id": "balls", "label": "كرات", "icon": { "model": "ball", "color": "blue" } },
+        { "id": "cubes", "label": "مكعبات", "icon": { "model": "cube", "color": "blue" } }
+      ],
+      "items": [
+        { "id": "a", "model": "cube", "color": "green", "bin": "cubes" },
+        { "id": "b", "model": "ball", "color": "blue", "bin": "balls" },
+        { "id": "c", "model": "ball", "color": "green", "bin": "balls" },
+        { "id": "d", "model": "cube", "color": "blue", "bin": "cubes" },
+        { "id": "e", "model": "cube", "color": "red", "bin": "cubes" },
+        { "id": "f", "model": "ball", "color": "red", "bin": "balls" }
+      ]
+    },
+    {
+      "id": "s1-q3",
+      "type": "sort",
+      "prompt": "صنّفي ما في الواحة: الفواكه في سلة، وأدوات القهوة في سلة.",
+      "bins": [
+        { "id": "fruit", "label": "فواكه", "icon": { "model": "orange" } },
+        { "id": "coffee", "label": "أدوات القهوة", "icon": { "model": "dallah" } }
+      ],
+      "items": [
+        { "id": "a", "model": "date", "bin": "fruit" },
+        { "id": "b", "model": "cup", "bin": "coffee" },
+        { "id": "c", "model": "orange", "bin": "fruit" },
+        { "id": "d", "model": "dallah", "bin": "coffee" },
+        { "id": "e", "model": "apple", "bin": "fruit" },
+        { "id": "f", "model": "cup", "bin": "coffee" }
+      ]
+    },
+    {
+      "id": "s1-q4",
+      "type": "pick",
+      "prompt": "أيُّ شيء لا ينتمي إلى المجموعة؟ المسيه.",
+      "items": [
+        { "id": "a", "model": "date" },
+        { "id": "b", "model": "date" },
+        { "id": "c", "model": "star", "color": "yellow" },
+        { "id": "d", "model": "date" }
+      ],
+      "answer": "c"
+    },
+    {
+      "id": "s1-q5",
+      "type": "choice",
+      "prompt": "انظري إلى المجموعتين. كيف صُنّفت هذه الأشياء؟",
+      "groups": [
+        [
+          { "id": "a", "model": "cube", "color": "blue", "size": "big" },
+          { "id": "b", "model": "ball", "color": "blue", "size": "big" },
+          { "id": "c", "model": "cone", "color": "blue", "size": "big" }
+        ],
+        [
+          { "id": "d", "model": "ball", "color": "orange", "size": "big" },
+          { "id": "e", "model": "cube", "color": "orange", "size": "big" },
+          { "id": "f", "model": "cone", "color": "orange", "size": "big" }
+        ]
+      ],
+      "options": [
+        { "id": "color", "label": "حسب اللون" },
+        { "id": "shape", "label": "حسب الشكل" },
+        { "id": "size", "label": "حسب الحجم" }
+      ],
+      "answer": "color"
+    }
+  ]
+}
