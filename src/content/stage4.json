@@ -1,0 +1,310 @@
+{
+ "version": "s4-v1",
+ "status": "final",
+ "intro": "مِنْ بُرْجِ الْمُرَاقَبَةِ نَقْرَأُ الْأَعْمِدَةَ الْبَيَانِيَّةَ. اُنْظُرِي إِلَى طُولِ كُلِّ عَمُودٍ.",
+ "questions": [
+  {
+   "id": "s4-q1",
+   "skill": "bar-read",
+   "type": "choice",
+   "prompt": "كَمْ تَمْرَةً فِي السَّلَّةِ؟",
+   "display": {
+    "type": "bar",
+    "title": "اَلْفَاكِهَةُ فِي السَّلَّة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 6
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    "5",
+    "6",
+    "7"
+   ],
+   "answer": "6",
+   "calc": {
+    "op": "count",
+    "row": "date"
+   }
+  },
+  {
+   "id": "s4-q2",
+   "skill": "bar-compare",
+   "type": "choice",
+   "prompt": "أَيُّ عَمُودٍ هُوَ الْأَطْوَلُ؟",
+   "display": {
+    "type": "bar",
+    "title": "اَلْفَاكِهَةُ فِي السَّلَّة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 6
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "date",
+     "label": "تَمْر",
+     "icon": {
+      "model": "date"
+     }
+    },
+    {
+     "id": "orange",
+     "label": "بُرْتُقَال",
+     "icon": {
+      "model": "orange"
+     }
+    },
+    {
+     "id": "apple",
+     "label": "تُفَّاح",
+     "icon": {
+      "model": "apple"
+     }
+    }
+   ],
+   "answer": "date",
+   "calc": {
+    "op": "max"
+   }
+  },
+  {
+   "id": "s4-q3",
+   "skill": "bar-compare",
+   "type": "choice",
+   "prompt": "أَيُّ عَمُودٍ هُوَ الْأَقْصَرُ؟",
+   "display": {
+    "type": "bar",
+    "title": "اَلْفَاكِهَةُ فِي السَّلَّة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 6
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "date",
+     "label": "تَمْر",
+     "icon": {
+      "model": "date"
+     }
+    },
+    {
+     "id": "orange",
+     "label": "بُرْتُقَال",
+     "icon": {
+      "model": "orange"
+     }
+    },
+    {
+     "id": "apple",
+     "label": "تُفَّاح",
+     "icon": {
+      "model": "apple"
+     }
+    }
+   ],
+   "answer": "orange",
+   "calc": {
+    "op": "min"
+   }
+  },
+  {
+   "id": "s4-q4",
+   "skill": "bar-make",
+   "type": "bar-make",
+   "prompt": "اِلْمِسِي كُلَّ عَمُودٍ عِنْدَ الْعَدَدِ الصَّحِيحِ.",
+   "title": "أَشْكَالٌ فِي الصُّنْدُوق",
+   "rows": [
+    {
+     "id": "ball",
+     "label": "كُرَة",
+     "icon": {
+      "model": "ball",
+      "color": "blue"
+     },
+     "count": 5
+    },
+    {
+     "id": "cube",
+     "label": "مُكَعَّب",
+     "icon": {
+      "model": "cube",
+      "color": "red"
+     },
+     "count": 3
+    },
+    {
+     "id": "star",
+     "label": "نَجْمَة",
+     "icon": {
+      "model": "star",
+      "color": "yellow"
+     },
+     "count": 4
+    }
+   ]
+  },
+  {
+   "id": "s4-q5",
+   "skill": "bar-make",
+   "type": "bar-make",
+   "prompt": "اِرْسُمِي الْأَعْمِدَةَ مِثْلَ الْجَدْوَلِ.",
+   "title": "أَدَوَاتُ الْقَهْوَة",
+   "rows": [
+    {
+     "id": "cup",
+     "label": "فِنْجَان",
+     "icon": {
+      "model": "cup"
+     },
+     "count": 6
+    },
+    {
+     "id": "dallah",
+     "label": "دَلَّة",
+     "icon": {
+      "model": "dallah"
+     },
+     "count": 2
+    }
+   ]
+  },
+  {
+   "id": "s4-q6",
+   "skill": "bar-read",
+   "type": "choice",
+   "prompt": "أَيُّ لَوْنٍ عَدَدُهُ خَمْسَةٌ؟",
+   "display": {
+    "type": "bar",
+    "title": "اَلْكُرَاتُ الْمُلَوَّنَة",
+    "rows": [
+     {
+      "id": "red",
+      "label": "أَحْمَر",
+      "icon": {
+       "model": "ball",
+       "color": "red"
+      },
+      "count": 3
+     },
+     {
+      "id": "blue",
+      "label": "أَزْرَق",
+      "icon": {
+       "model": "ball",
+       "color": "blue"
+      },
+      "count": 5
+     },
+     {
+      "id": "green",
+      "label": "أَخْضَر",
+      "icon": {
+       "model": "ball",
+       "color": "green"
+      },
+      "count": 2
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "red",
+     "label": "أَحْمَر",
+     "icon": {
+      "model": "ball",
+      "color": "red"
+     }
+    },
+    {
+     "id": "blue",
+     "label": "أَزْرَق",
+     "icon": {
+      "model": "ball",
+      "color": "blue"
+     }
+    },
+    {
+     "id": "green",
+     "label": "أَخْضَر",
+     "icon": {
+      "model": "ball",
+      "color": "green"
+     }
+    }
+   ],
+   "answer": "blue",
+   "calc": {
+    "op": "equals",
+    "n": 5
+   }
+  }
+ ]
+}

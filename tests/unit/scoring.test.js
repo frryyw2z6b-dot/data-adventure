@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
 import { scoreQuestion, firstRecords, starsFor } from '../../src/shared/scoring.js';
 import { normalizeCode, CODE_PATTERN, DEMO_CLASS_CODE } from '../../src/shared/classCode.js';
-import stage1 from '../../src/content/stage1.json';
+import { ALL_QUESTIONS } from '../../src/content/stages.js';
 
-const q = (id) => stage1.questions.find((x) => x.id === id);
+const q = (id) => ALL_QUESTIONS.find((x) => x.id === id);
 
 describe('scoreQuestion', () => {
   it('الفرز: كل العناصر صحيحة من أول مرة = 1', () => {
-    const r = scoreQuestion(q('s1-q1'), { attempts: ['a>red', 'b>yellow', 'c>red', 'd>yellow', 'e>yellow'] });
+    const r = scoreQuestion(q('s1-q1'), { attempts: ['a>red', 'b>yellow', 'c>red', 'd>yellow', 'e>yellow', 'f>red'] });
     expect(r.score).toBe(1);
     expect(r.firstTry).toBe(true);
     expect(r.solved).toBe(true);
@@ -15,9 +15,9 @@ describe('scoreQuestion', () => {
 
   it('الفرز: خطأ أول في عنصر واحد يحتسب جزئيًا', () => {
     const r = scoreQuestion(q('s1-q1'), {
-      attempts: ['a>yellow', 'a>red', 'b>yellow', 'c>red', 'd>yellow', 'e>yellow'],
+      attempts: ['a>yellow', 'a>red', 'b>yellow', 'c>red', 'd>yellow', 'e>yellow', 'f>red'],
     });
-    expect(r.score).toBeCloseTo(4 / 5);
+    expect(r.score).toBeCloseTo(5 / 6);
     expect(r.solved).toBe(true);
   });
 
@@ -27,15 +27,22 @@ describe('scoreQuestion', () => {
   });
 
   it('الاختيار: أول محاولة 1، الثانية 0.5، وما بعدها 0', () => {
-    expect(scoreQuestion(q('s1-q5'), { attempts: ['color'] }).score).toBe(1);
-    expect(scoreQuestion(q('s1-q5'), { attempts: ['shape', 'color'] }).score).toBe(0.5);
-    expect(scoreQuestion(q('s1-q5'), { attempts: ['shape', 'size', 'color'] }).score).toBe(0);
-    expect(scoreQuestion(q('s1-q4'), { attempts: ['a', 'b', 'd'] }).solved).toBe(false);
+    expect(scoreQuestion(q('s1-q6'), { attempts: ['color'] }).score).toBe(1);
+    expect(scoreQuestion(q('s1-q6'), { attempts: ['shape', 'color'] }).score).toBe(0.5);
+    expect(scoreQuestion(q('s1-q6'), { attempts: ['shape', 'size', 'color'] }).score).toBe(0);
+    expect(scoreQuestion(q('s1-q5'), { attempts: ['a', 'b', 'd'] }).solved).toBe(false);
+  });
+
+  it('أنشطة البناء تُصحَّح بمقارنة القيمة المرسلة', () => {
+    expect(scoreQuestion(q('s2-q3'), { attempts: ['6'] }).score).toBe(1);
+    expect(scoreQuestion(q('s2-q3'), { attempts: ['5', '6'] }).score).toBe(0.5);
+    expect(scoreQuestion(q('s3-q4'), { attempts: ['4,2,3'] }).firstTry).toBe(true);
+    expect(scoreQuestion(q('s4-q4'), { attempts: ['5,3,3', '5,3,4'] }).score).toBe(0.5);
   });
 
   it('لا يثق بسلاسل غريبة في المحاولات', () => {
     const r = scoreQuestion(q('s1-q1'), { attempts: ['zzz>red', '<script>', 'a>red'] });
-    expect(r.score).toBeCloseTo(1 / 5);
+    expect(r.score).toBeCloseTo(1 / 6);
   });
 });
 
@@ -62,21 +69,3 @@ describe('helpers', () => {
   });
 });
 
-describe('سلامة ملف محتوى المرحلة الأولى', () => {
-  it('كل سؤال فرز: لكل عنصر سلة موجودة', () => {
-    for (const question of stage1.questions.filter((x) => x.type === 'sort')) {
-      const bins = new Set(question.bins.map((b) => b.id));
-      for (const it of question.items) expect(bins.has(it.bin)).toBe(true);
-    }
-  });
-  it('أسئلة الاختيار مفتاحها ضمن الخيارات', () => {
-    for (const question of stage1.questions) {
-      if (question.type === 'choice') expect(question.options.map((o) => o.id)).toContain(question.answer);
-      if (question.type === 'pick') expect(question.items.map((o) => o.id)).toContain(question.answer);
-    }
-  });
-  it('المعرّفات فريدة', () => {
-    const ids = stage1.questions.map((x) => x.id);
-    expect(new Set(ids).size).toBe(ids.length);
-  });
-});

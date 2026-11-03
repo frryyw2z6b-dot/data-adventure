@@ -1,0 +1,301 @@
+{
+ "version": "s5-v1",
+ "status": "final",
+ "intro": "فِي خَيْمَةِ الْحُكَمَاءِ نُقَارِنُ وَنَسْتَنْتِجُ. فَكِّرِي جَيِّدًا!",
+ "questions": [
+  {
+   "id": "s5-q1",
+   "skill": "data-diff",
+   "type": "choice",
+   "prompt": "كَمْ يَزِيدُ التَّمْرُ عَلَى الْبُرْتُقَالِ؟",
+   "display": {
+    "type": "bar",
+    "title": "اَلْفَاكِهَةُ فِي السَّلَّة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 6
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    "2",
+    "3",
+    "4"
+   ],
+   "answer": "3",
+   "calc": {
+    "op": "diff",
+    "a": "date",
+    "b": "orange"
+   }
+  },
+  {
+   "id": "s5-q2",
+   "skill": "data-total",
+   "type": "choice",
+   "prompt": "كَمْ مَجْمُوعُ التَّمْرِ وَالتُّفَّاحِ؟",
+   "display": {
+    "type": "picto",
+    "title": "اَلْفَاكِهَةُ الْمُفَضَّلَة",
+    "key": "كُلُّ صُورَةٍ = طَالِبَةٌ وَاحِدَة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 5
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 4
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 3
+     }
+    ]
+   },
+   "options": [
+    "7",
+    "8",
+    "9"
+   ],
+   "answer": "8",
+   "calc": {
+    "op": "sum",
+    "rows": [
+     "date",
+     "apple"
+    ]
+   }
+  },
+  {
+   "id": "s5-q3",
+   "skill": "data-compare",
+   "type": "choice",
+   "prompt": "أَيُّ شَكْلَيْنِ لَهُمَا الْعَدَدُ نَفْسُهُ؟",
+   "display": {
+    "type": "tally",
+    "title": "أَشْكَالُ الْخَيْمَة",
+    "rows": [
+     {
+      "id": "ball",
+      "label": "كُرَة",
+      "icon": {
+       "model": "ball",
+       "color": "blue"
+      },
+      "count": 4
+     },
+     {
+      "id": "cube",
+      "label": "مُكَعَّب",
+      "icon": {
+       "model": "cube",
+       "color": "red"
+      },
+      "count": 4
+     },
+     {
+      "id": "star",
+      "label": "نَجْمَة",
+      "icon": {
+       "model": "star",
+       "color": "yellow"
+      },
+      "count": 2
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "ball+cube",
+     "label": "اَلْكُرَةُ وَالْمُكَعَّبُ"
+    },
+    {
+     "id": "ball+star",
+     "label": "اَلْكُرَةُ وَالنَّجْمَةُ"
+    },
+    {
+     "id": "cube+star",
+     "label": "اَلْمُكَعَّبُ وَالنَّجْمَةُ"
+    }
+   ],
+   "answer": "ball+cube",
+   "calc": {
+    "op": "equalPair"
+   }
+  },
+  {
+   "id": "s5-q4",
+   "skill": "data-diff",
+   "type": "choice",
+   "prompt": "كَمِ الْفَرْقُ بَيْنَ الْفَنَاجِينِ وَالدِّلَالِ؟",
+   "display": {
+    "type": "bar",
+    "title": "أَدَوَاتُ الْقَهْوَة",
+    "rows": [
+     {
+      "id": "cup",
+      "label": "فِنْجَان",
+      "icon": {
+       "model": "cup"
+      },
+      "count": 7
+     },
+     {
+      "id": "dallah",
+      "label": "دَلَّة",
+      "icon": {
+       "model": "dallah"
+      },
+      "count": 3
+     }
+    ]
+   },
+   "options": [
+    "3",
+    "4",
+    "5"
+   ],
+   "answer": "4",
+   "calc": {
+    "op": "diff",
+    "a": "cup",
+    "b": "dallah"
+   }
+  },
+  {
+   "id": "s5-q5",
+   "skill": "data-total",
+   "type": "choice",
+   "prompt": "كَمْ كُرَةً فِي التَّمْثِيلِ كُلِّهِ؟",
+   "display": {
+    "type": "picto",
+    "title": "اَلْكُرَاتُ الْمُلَوَّنَة",
+    "key": "كُلُّ صُورَةٍ = كُرَةٌ وَاحِدَة",
+    "rows": [
+     {
+      "id": "red",
+      "label": "أَحْمَر",
+      "icon": {
+       "model": "ball",
+       "color": "red"
+      },
+      "count": 2
+     },
+     {
+      "id": "blue",
+      "label": "أَزْرَق",
+      "icon": {
+       "model": "ball",
+       "color": "blue"
+      },
+      "count": 6
+     },
+     {
+      "id": "green",
+      "label": "أَخْضَر",
+      "icon": {
+       "model": "ball",
+       "color": "green"
+      },
+      "count": 4
+     }
+    ]
+   },
+   "options": [
+    "10",
+    "11",
+    "12"
+   ],
+   "answer": "12",
+   "calc": {
+    "op": "sum",
+    "rows": [
+     "red",
+     "blue",
+     "green"
+    ]
+   }
+  },
+  {
+   "id": "s5-q6",
+   "skill": "data-infer",
+   "type": "choice",
+   "prompt": "أَضَفْنَا تُفَّاحَتَيْنِ. كَمْ يُصْبِحُ التُّفَّاحُ؟",
+   "display": {
+    "type": "bar",
+    "title": "اَلْفَاكِهَةُ فِي السَّلَّة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 6
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    "6",
+    "7",
+    "8"
+   ],
+   "answer": "7",
+   "calc": {
+    "op": "add",
+    "row": "apple",
+    "n": 2
+   }
+  }
+ ]
+}

@@ -5,6 +5,8 @@
 // صيغة المحاولات (attempts) قائمة نصوص:
 //   • choice / pick : معرّف الخيار أو العنصر الذي اختارته الطالبة، مثل "color" أو "c"
 //   • sort          : "معرّف_العنصر>معرّف_السلة" لكل إسقاط، مثل "a>red"
+//   • tally-make    : العدد الذي رسمته بالإشارات، مثل "6"
+//   • picto-make / bar-make : أعداد الصفوف أو الأعمدة مفصولة بفواصل، مثل "4,2,3"
 
 export const MAX_TRIES = 3;
 
@@ -36,8 +38,8 @@ export function scoreQuestion(question, record) {
     };
   }
 
-  // choice / pick
-  const answer = question.answer;
+  // choice / pick / tally-make / picto-make / bar-make
+  const answer = String(question.answer);
   const idx = attempts.findIndex((a) => a === answer);
   const score = idx === 0 ? 1 : idx === 1 ? 0.5 : 0;
   return {

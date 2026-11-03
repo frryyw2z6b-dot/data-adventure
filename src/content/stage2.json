@@ -1,0 +1,240 @@
+{
+ "version": "s2-v1",
+ "status": "final",
+ "intro": "فِي سُوقِ الْقَرْيَةِ نَعُدُّ بِالْإِشَارَاتِ. كُلُّ خَمْسِ إِشَارَاتٍ تَصِيرُ حُزْمَةً.",
+ "questions": [
+  {
+   "id": "s2-q1",
+   "skill": "tally-read",
+   "type": "choice",
+   "prompt": "كَمْ إِشَارَةً عَلَى اللَّوْحِ؟",
+   "display": {
+    "type": "tally",
+    "rows": [
+     {
+      "id": "t",
+      "label": "",
+      "count": 4
+     }
+    ]
+   },
+   "options": [
+    "3",
+    "4",
+    "5"
+   ],
+   "answer": "4",
+   "calc": {
+    "op": "count",
+    "row": "t"
+   }
+  },
+  {
+   "id": "s2-q2",
+   "skill": "tally-read",
+   "type": "choice",
+   "prompt": "هَذِهِ حُزْمَةٌ. كَمْ إِشَارَةً فِيهَا؟",
+   "display": {
+    "type": "tally",
+    "rows": [
+     {
+      "id": "t",
+      "label": "",
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    "4",
+    "5",
+    "6"
+   ],
+   "answer": "5",
+   "calc": {
+    "op": "count",
+    "row": "t"
+   }
+  },
+  {
+   "id": "s2-q3",
+   "skill": "tally-make",
+   "type": "tally-make",
+   "prompt": "عُدِّي التَّمْرَ، ثُمَّ ارْسُمِي إِشَارَاتِهِ.",
+   "items": [
+    {
+     "model": "date",
+     "id": "d0"
+    },
+    {
+     "model": "date",
+     "id": "d1"
+    },
+    {
+     "model": "date",
+     "id": "d2"
+    },
+    {
+     "model": "date",
+     "id": "d3"
+    },
+    {
+     "model": "date",
+     "id": "d4"
+    },
+    {
+     "model": "date",
+     "id": "d5"
+    }
+   ]
+  },
+  {
+   "id": "s2-q4",
+   "skill": "tally-make",
+   "type": "tally-make",
+   "prompt": "عُدِّي الْفَنَاجِينَ، ثُمَّ ارْسُمِي إِشَارَاتِهَا.",
+   "items": [
+    {
+     "model": "cup",
+     "id": "c0"
+    },
+    {
+     "model": "cup",
+     "id": "c1"
+    },
+    {
+     "model": "cup",
+     "id": "c2"
+    },
+    {
+     "model": "cup",
+     "id": "c3"
+    },
+    {
+     "model": "cup",
+     "id": "c4"
+    },
+    {
+     "model": "cup",
+     "id": "c5"
+    },
+    {
+     "model": "cup",
+     "id": "c6"
+    },
+    {
+     "model": "cup",
+     "id": "c7"
+    }
+   ]
+  },
+  {
+   "id": "s2-q5",
+   "skill": "tally-compare",
+   "type": "choice",
+   "prompt": "أَيُّ فَاكِهَةٍ عَدَدُهَا أَكْثَرُ؟",
+   "display": {
+    "type": "tally",
+    "title": "فَاكِهَةُ السُّوق",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 7
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "date",
+     "label": "تَمْر",
+     "icon": {
+      "model": "date"
+     }
+    },
+    {
+     "id": "orange",
+     "label": "بُرْتُقَال",
+     "icon": {
+      "model": "orange"
+     }
+    },
+    {
+     "id": "apple",
+     "label": "تُفَّاح",
+     "icon": {
+      "model": "apple"
+     }
+    }
+   ],
+   "answer": "date",
+   "calc": {
+    "op": "max"
+   }
+  },
+  {
+   "id": "s2-q6",
+   "skill": "tally-read",
+   "type": "choice",
+   "prompt": "كَمْ بُرْتُقَالَةً فِي الْجَدْوَلِ؟",
+   "display": {
+    "type": "tally",
+    "title": "فَاكِهَةُ السُّوق",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 7
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 3
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 5
+     }
+    ]
+   },
+   "options": [
+    "2",
+    "3",
+    "4"
+   ],
+   "answer": "3",
+   "calc": {
+    "op": "count",
+    "row": "orange"
+   }
+  }
+ ]
+}

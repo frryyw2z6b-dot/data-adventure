@@ -1,0 +1,293 @@
+{
+ "version": "s3-v1",
+ "status": "final",
+ "intro": "فِي قَلْعَةِ الْحِصْنِ نُمَثِّلُ الْبَيَانَاتِ بِالصُّوَرِ. كُلُّ صُورَةٍ تَعْنِي وَاحِدًا.",
+ "questions": [
+  {
+   "id": "s3-q1",
+   "skill": "picto-read",
+   "type": "choice",
+   "prompt": "كَمْ طَالِبَةً تُحِبُّ التُّفَّاحَ؟",
+   "display": {
+    "type": "picto",
+    "title": "اَلْفَاكِهَةُ الْمُفَضَّلَة",
+    "key": "كُلُّ صُورَةٍ = طَالِبَةٌ وَاحِدَة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 5
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 4
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 3
+     }
+    ]
+   },
+   "options": [
+    "2",
+    "3",
+    "4"
+   ],
+   "answer": "3",
+   "calc": {
+    "op": "count",
+    "row": "apple"
+   }
+  },
+  {
+   "id": "s3-q2",
+   "skill": "picto-compare",
+   "type": "choice",
+   "prompt": "أَيُّ فَاكِهَةٍ تُحِبُّهَا طَالِبَاتٌ أَكْثَرُ؟",
+   "display": {
+    "type": "picto",
+    "title": "اَلْفَاكِهَةُ الْمُفَضَّلَة",
+    "key": "كُلُّ صُورَةٍ = طَالِبَةٌ وَاحِدَة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 5
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 4
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 3
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "date",
+     "label": "تَمْر",
+     "icon": {
+      "model": "date"
+     }
+    },
+    {
+     "id": "orange",
+     "label": "بُرْتُقَال",
+     "icon": {
+      "model": "orange"
+     }
+    },
+    {
+     "id": "apple",
+     "label": "تُفَّاح",
+     "icon": {
+      "model": "apple"
+     }
+    }
+   ],
+   "answer": "date",
+   "calc": {
+    "op": "max"
+   }
+  },
+  {
+   "id": "s3-q3",
+   "skill": "picto-compare",
+   "type": "choice",
+   "prompt": "أَيُّ فَاكِهَةٍ تُحِبُّهَا طَالِبَاتٌ أَقَلُّ؟",
+   "display": {
+    "type": "picto",
+    "title": "اَلْفَاكِهَةُ الْمُفَضَّلَة",
+    "key": "كُلُّ صُورَةٍ = طَالِبَةٌ وَاحِدَة",
+    "rows": [
+     {
+      "id": "date",
+      "label": "تَمْر",
+      "icon": {
+       "model": "date"
+      },
+      "count": 5
+     },
+     {
+      "id": "orange",
+      "label": "بُرْتُقَال",
+      "icon": {
+       "model": "orange"
+      },
+      "count": 4
+     },
+     {
+      "id": "apple",
+      "label": "تُفَّاح",
+      "icon": {
+       "model": "apple"
+      },
+      "count": 3
+     }
+    ]
+   },
+   "options": [
+    {
+     "id": "date",
+     "label": "تَمْر",
+     "icon": {
+      "model": "date"
+     }
+    },
+    {
+     "id": "orange",
+     "label": "بُرْتُقَال",
+     "icon": {
+      "model": "orange"
+     }
+    },
+    {
+     "id": "apple",
+     "label": "تُفَّاح",
+     "icon": {
+      "model": "apple"
+     }
+    }
+   ],
+   "answer": "apple",
+   "calc": {
+    "op": "min"
+   }
+  },
+  {
+   "id": "s3-q4",
+   "skill": "picto-make",
+   "type": "picto-make",
+   "prompt": "اِلْمِسِي كُلَّ صَفٍّ لِتُضِيفِي صُوَرًا مِثْلَ الْجَدْوَلِ.",
+   "title": "أَشْكَالٌ فِي الصُّنْدُوق",
+   "rows": [
+    {
+     "id": "ball",
+     "label": "كُرَة",
+     "icon": {
+      "model": "ball",
+      "color": "blue"
+     },
+     "count": 4
+    },
+    {
+     "id": "cube",
+     "label": "مُكَعَّب",
+     "icon": {
+      "model": "cube",
+      "color": "red"
+     },
+     "count": 2
+    },
+    {
+     "id": "star",
+     "label": "نَجْمَة",
+     "icon": {
+      "model": "star",
+      "color": "yellow"
+     },
+     "count": 3
+    }
+   ]
+  },
+  {
+   "id": "s3-q5",
+   "skill": "picto-make",
+   "type": "picto-make",
+   "prompt": "اِصْنَعِي صُوَرًا مِثْلَ الْجَدْوَلِ.",
+   "title": "أَدَوَاتُ الْقَهْوَة",
+   "rows": [
+    {
+     "id": "dallah",
+     "label": "دَلَّة",
+     "icon": {
+      "model": "dallah"
+     },
+     "count": 2
+    },
+    {
+     "id": "cup",
+     "label": "فِنْجَان",
+     "icon": {
+      "model": "cup"
+     },
+     "count": 5
+    }
+   ]
+  },
+  {
+   "id": "s3-q6",
+   "skill": "picto-read",
+   "type": "choice",
+   "prompt": "كَمْ كُرَةً زَرْقَاءَ هُنَا؟",
+   "display": {
+    "type": "picto",
+    "title": "اَلْكُرَاتُ الْمُلَوَّنَة",
+    "key": "كُلُّ صُورَةٍ = كُرَةٌ وَاحِدَة",
+    "rows": [
+     {
+      "id": "red",
+      "label": "أَحْمَر",
+      "icon": {
+       "model": "ball",
+       "color": "red"
+      },
+      "count": 2
+     },
+     {
+      "id": "blue",
+      "label": "أَزْرَق",
+      "icon": {
+       "model": "ball",
+       "color": "blue"
+      },
+      "count": 6
+     },
+     {
+      "id": "green",
+      "label": "أَخْضَر",
+      "icon": {
+       "model": "ball",
+       "color": "green"
+      },
+      "count": 4
+     }
+    ]
+   },
+   "options": [
+    "5",
+    "6",
+    "7"
+   ],
+   "answer": "6",
+   "calc": {
+    "op": "count",
+    "row": "blue"
+   }
+  }
+ ]
+}
