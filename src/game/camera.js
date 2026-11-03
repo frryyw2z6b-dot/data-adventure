@@ -8,7 +8,10 @@ export const PLAY_LOOK = new THREE.Vector3(0, 0, -0.55);
 export const FRAMES = {
   rug: { pos: PLAY_POS, look: PLAY_LOOK },
   board: { pos: new THREE.Vector3(0, 4.2, 8.2), look: new THREE.Vector3(0, 1.75, -1.5) },
+  // الشاشات القصيرة (جوال أفقي): من أعلى قليلًا حتى يظهر اللوح وصفوف السجادة معًا
+  boardShort: { pos: new THREE.Vector3(0, 7.2, 7.6), look: new THREE.Vector3(0, 0.55, -0.4) },
 };
+const isShort = () => window.innerHeight < 520;
 
 export function createDirector(engine) {
   const cam = engine.camera;
@@ -100,7 +103,7 @@ export function createDirector(engine) {
     frame(name) {
       if (frameName === name && mode === 'play') return Promise.resolve();
       frameName = name;
-      frame = FRAMES[name];
+      frame = (isShort() && FRAMES[name + 'Short']) || FRAMES[name];
       return flyTo(frame.pos, frame.look, 1.0).then(() => setMode('play'));
     },
     toAerial: () =>

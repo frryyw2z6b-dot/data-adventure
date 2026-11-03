@@ -414,7 +414,7 @@ export function createUI(audio, { say } = {}) {
       clearTimeout(toastTimer);
       toastEl.textContent = text;
       toastEl.className = `toast show ${kind}`;
-      toastTimer = setTimeout(() => (toastEl.className = 'toast'), ms);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), ms);
     },
 
     /** أزرار الإجابة: نص، أو أيقونة ونص؛ الخيارات النصية لها زر استماع */

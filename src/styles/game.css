@@ -1195,3 +1195,86 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── الشاشات القصيرة (الجوال أفقيًا) ── */
+@media (max-height: 520px) {
+  .btn.pill span,
+  #hud .stage-name {
+    display: none;
+  }
+  .btn.pill {
+    min-height: 42px;
+    padding: 0.2em 0.6em;
+  }
+  #hud {
+    inset-inline: 10px 120px;
+  }
+  .prompt {
+    top: max(6px, env(safe-area-inset-top));
+    width: min(560px, calc(100% - 300px));
+    padding: 4px 10px;
+    border-radius: 16px;
+    gap: 8px;
+  }
+  .prompt .avatar {
+    display: none;
+  }
+  .prompt p {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .prompt .btn.icon {
+    width: 40px;
+    height: 40px;
+    min-height: 40px;
+  }
+  .btn {
+    min-height: 46px;
+    font-size: 1.05rem;
+  }
+  .btn.choice.num {
+    font-size: 1.6rem;
+    min-width: 80px;
+  }
+  .choices {
+    bottom: max(8px, env(safe-area-inset-bottom));
+  }
+  .toast {
+    font-size: 1.6rem;
+  }
+  .toast.hint {
+    font-size: 1rem;
+    bottom: 64px;
+    padding: 4px 16px;
+  }
+  .card {
+    padding: 16px 18px 14px;
+  }
+  .dialog .speech {
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+  }
+  .avatar.big {
+    width: 60px;
+    height: 60px;
+  }
+  .map-screen {
+    padding-top: 60px;
+  }
+  .station {
+    min-height: 0;
+    padding: 8px 6px;
+  }
+  .station .medal {
+    width: 52px;
+    height: 52px;
+  }
+  .station .num {
+    font-size: 1.5rem;
+  }
+  #datacard {
+    top: 56px;
+    transform: none;
+    padding: 6px 10px;
+  }
+}

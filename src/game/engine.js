@@ -39,7 +39,13 @@ export class Engine {
     const aspect = w / h;
     this.camera.aspect = aspect;
     const needed = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(this.minHFov) / 2) / aspect));
-    this.camera.fov = Math.min(Math.max(this.baseFov, needed), 85);
+    // الشاشات القصيرة العريضة تحتاج زاوية رأسية أوسع حتى يظهر اللوح والسجادة معًا
+    const base = h < 520 ? 54 : this.baseFov;
+    this.camera.fov = Math.min(Math.max(base, needed), 85);
+    // الشاشات القصيرة (جوال أفقي): نُنزل المشهد قليلًا حتى لا يغطيه شريط السؤال في الأعلى
+    const shift = h < 520 ? Math.round(h * 0.13) : 0;
+    if (shift) this.camera.setViewOffset(w, h + shift * 2, 0, 0, w, h);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
   }
 
