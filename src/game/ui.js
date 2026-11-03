@@ -88,8 +88,11 @@ export function createUI(audio, { say } = {}) {
   function show(html) {
     screens.innerHTML = html;
     screens.hidden = false;
-    requestAnimationFrame(() => screens.firstElementChild?.classList.add('in'));
-    return screens.firstElementChild;
+    const el = screens.firstElementChild;
+    // الظهور التدريجي، مع ضمان الظهور حتى لو تأخرت إطارات الرسم على الأجهزة البطيئة
+    requestAnimationFrame(() => el?.classList.add('in'));
+    setTimeout(() => el?.classList.add('in'), 120);
+    return el;
   }
   function clear() {
     screens.innerHTML = '';
