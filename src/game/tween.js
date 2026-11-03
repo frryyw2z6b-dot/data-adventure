@@ -26,6 +26,11 @@ export class Tweens {
     });
   }
 
+  /** يُنهي كل الحركات الجارية فورًا (لزر «تخطّي») */
+  skipAll() {
+    for (const tw of this.list) tw.t = Math.max(tw.t, tw.duration);
+  }
+
   wait(seconds) {
     return this.run(seconds, () => {}, ease.linear);
   }

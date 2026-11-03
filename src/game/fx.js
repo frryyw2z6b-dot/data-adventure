@@ -90,12 +90,17 @@ export function createFx(engine) {
         confetti.setMatrixAt(i, m);
       });
       confetti.instanceMatrix.needsUpdate = true;
-      if (confT > 7) {
+      if (confT > 4.5) {
         confT = -1;
         confetti.visible = false;
       }
     }
   });
 
-  return { burst, celebrate };
+  function stopCelebrate() {
+    confT = -1;
+    confetti.visible = false;
+  }
+
+  return { burst, celebrate, stopCelebrate };
 }

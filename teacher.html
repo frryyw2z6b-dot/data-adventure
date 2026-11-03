@@ -27,8 +27,8 @@
       <form class="panel login-card" id="login-form">
         <h2>دخول المعلمة</h2>
         <p class="muted">استخدمي البريد وكلمة المرور المسجَّلين في المشروع.</p>
-        <label>البريد الإلكتروني <input type="email" name="email" required autocomplete="username" dir="ltr" /></label>
-        <label>كلمة المرور <input type="password" name="password" required autocomplete="current-password" dir="ltr" /></label>
+        <label>البريد الإلكتروني <input id="email" type="email" name="email" required autocomplete="username" dir="ltr" /></label>
+        <label>كلمة المرور <input id="password" type="password" name="password" required autocomplete="current-password" dir="ltr" /></label>
         <p class="error" id="login-error" hidden></p>
         <button class="tbtn primary" type="submit">دخول</button>
       </form>
@@ -47,44 +47,51 @@
         </div>
         <div class="class-state">
           <span id="live" class="live"><i></i>مباشر</span>
+          <button id="join-screen" class="tbtn">شاشة الانضمام</button>
+          <button id="roster-btn" class="tbtn ghost">قائمة الأسماء</button>
           <button id="toggle-class" class="tbtn ghost"></button>
-          <button id="export" class="tbtn">تصدير النتائج (CSV)</button>
+          <button id="export" class="tbtn">تصدير Excel</button>
         </div>
       </section>
 
-      <p id="draft-note" class="note" hidden></p>
-
       <section class="kpis">
-        <div class="kpi"><span>الطالبات المنضمات</span><strong id="k-students">٠</strong></div>
+        <div class="kpi"><span>دخلن اللعبة</span><strong id="k-students">٠</strong></div>
         <div class="kpi"><span>إجابات مستلمة</span><strong id="k-answers">٠</strong></div>
         <div class="kpi"><span>متوسط الفصل</span><strong id="k-avg">—</strong></div>
-        <div class="kpi"><span>أنهين المرحلة الأولى</span><strong id="k-done">٠</strong></div>
+        <div class="kpi"><span>أنهين المغامرة</span><strong id="k-done">٠</strong></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>تقدّم الطالبات ونتائجهن</h2>
+          <input id="search" type="search" placeholder="ابحثي عن طالبة" />
+        </div>
+        <div class="table-wrap">
+          <table id="students-table">
+            <thead>
+              <tr>
+                <th>الطالبة</th>
+                <th>المراحل الخمس</th>
+                <th>الدرجة</th>
+                <th>المحاولات</th>
+                <th>تحتاج دعمًا في</th>
+                <th>آخر نشاط</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <p id="empty-students" class="empty">لم تنضم أي طالبة بعد. اعرضي «شاشة الانضمام» في Teams.</p>
+        </div>
+        <p class="legend">
+          <span><i class="chip hi">٨٠٪+</i> متمكنة</span><span><i class="chip mid">٦٠–٧٩٪</i> جيدة</span><span><i class="chip lo">أقل من ٦٠٪</i> تحتاج دعمًا</span><span><i class="chip wip">…</i> تلعب الآن</span>
+        </p>
       </section>
 
       <div class="grid">
         <section class="panel">
-          <div class="panel-head">
-            <h2>نتائج الطالبات</h2>
-            <input id="search" type="search" placeholder="ابحثي عن طالبة" />
-          </div>
-          <div class="table-wrap">
-            <table id="students-table">
-              <thead>
-                <tr>
-                  <th>الطالبة</th>
-                  <th>المرحلة</th>
-                  <th>الأسئلة</th>
-                  <th>الدرجة</th>
-                  <th>من أول محاولة</th>
-                  <th>آخر نشاط</th>
-                </tr>
-              </thead>
-              <tbody></tbody>
-            </table>
-            <p id="empty-students" class="empty">لم تنضم أي طالبة بعد. اعرضي رمز الفصل على السبورة.</p>
-          </div>
+          <h2>مهارات الفصل</h2>
+          <ol id="skills" class="qlist"></ol>
         </section>
-
         <aside class="side">
           <section class="panel">
             <h2>آخر الإجابات</h2>
@@ -93,7 +100,7 @@
           </section>
           <section class="panel">
             <h2>أداء الفصل في كل سؤال</h2>
-            <ol id="questions" class="qlist"></ol>
+            <ol id="questions" class="qlist compact"></ol>
           </section>
         </aside>
       </div>
@@ -109,6 +116,35 @@
           <button type="button" class="tbtn ghost" data-cancel>إلغاء</button>
           <button type="submit" class="tbtn">إنشاء الفصل</button>
         </div>
+      </form>
+    </dialog>
+
+    <dialog id="roster-dialog" class="drawer small">
+      <form id="roster-form" class="dialog-form">
+        <h2>قائمة أسماء الطالبات</h2>
+        <p class="muted">اكتبي اسم كل طالبة في سطر. ستظهر الأسماء للطالبات أزرارًا تختار منها كل طالبة اسمها، فلا تحتاج إلى كتابته. اتركيها فارغة لتكتب كل طالبة اسمها بنفسها.</p>
+        <textarea id="roster-text" rows="12" placeholder="سارة&#10;نورة&#10;ريم"></textarea>
+        <p class="muted" id="roster-count"></p>
+        <div class="row-end">
+          <button type="button" class="tbtn ghost" data-cancel>إلغاء</button>
+          <button type="submit" class="tbtn">حفظ القائمة</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="join-dialog" class="join-dialog">
+      <form method="dialog" class="join-inner">
+        <p class="jd-kicker">مغامرة مستكشفي البيانات</p>
+        <h2>اُدْخُلِي الْمُغَامَرَةَ</h2>
+        <ol class="jd-steps">
+          <li>اِفْتَحِي الرَّابِطَ فِي الْمُتَصَفِّحِ.</li>
+          <li>اُكْتُبِي رَمْزَ الْفَصْلِ.</li>
+          <li>اِخْتَارِي اسْمَكِ وَابْدَئِي.</li>
+        </ol>
+        <div class="jd-code" dir="ltr" id="jd-code">——</div>
+        <div class="jd-link"><span id="jd-link" dir="ltr"></span><button type="button" class="tbtn" id="copy-link">نسخ الرابط</button></div>
+        <p class="muted">ضعي الرابط في محادثة الاجتماع على Teams، ثم شاركي هذه الشاشة.</p>
+        <button class="tbtn ghost">إغلاق</button>
       </form>
     </dialog>
 

@@ -20,9 +20,13 @@
         <p class="stage-name"></p>
         <div class="dots" aria-label="تقدّم الأسئلة"></div>
       </div>
-      <span class="draft" hidden title="هذه الأسئلة للتجربة حتى تُراجَع مع الكتاب">أسئلة تجريبية</span>
     </header>
-    <button id="sound-btn" class="btn icon" aria-label="الصوت"></button>
+    <div id="audio-controls">
+      <button id="sound-btn" class="btn pill" aria-label="تشغيل الصوت أو كتمه"></button>
+      <button id="music-btn" class="btn pill" aria-label="تشغيل الموسيقى أو إيقافها"></button>
+    </div>
+    <button id="skip-btn" class="btn ghost small" hidden>تَخَطِّي ⏭</button>
+    <aside id="datacard" hidden></aside>
 
     <div id="prompt" class="prompt" hidden aria-live="polite"></div>
     <div id="choices" class="choices" hidden></div>

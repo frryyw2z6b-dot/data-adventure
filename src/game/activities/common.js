@@ -41,6 +41,7 @@ export function createPointer(engine) {
 
   return {
     screen,
+    raycaster,
     set(h) {
       handlers = h;
     },
@@ -159,3 +160,29 @@ export function onAbort(ctx, cleanup, reject) {
     { once: true },
   );
 }
+
+/** يبني عرض البيانات للسؤال ويضبط الكاميرا على اللوح */
+export async function openDisplay(ctx, display, opts = {}) {
+  const { tallyView, pictoView, barView } = await import('../displays.js');
+  ctx.director.frame('board');
+  await ctx.dataBoard.show();
+  if (display.type === 'tally') return tallyView(ctx, { title: display.title, rows: display.rows, ...opts });
+  if (display.type === 'picto') return pictoView(ctx, { title: display.title, keyText: display.key, rows: display.rows, ...opts });
+  if (display.type === 'bar') return barView(ctx, { title: display.title, rows: display.rows, ...opts });
+  throw new Error('unknown display ' + display.type);
+}
+
+/** حلقة المحاولات المشتركة لأنشطة البناء والاختيار */
+export const praise = (ctx) => {
+  const { LINES } = ctx;
+  const t = pickOne(LINES.praise);
+  ctx.ui.toast(t, 'good');
+  ctx.say(t);
+  ctx.noura?.cheer();
+};
+export const tryAgain = (ctx, text) => {
+  const t = text || pickOne(ctx.LINES.tryAgain);
+  ctx.ui.toast(t, 'try');
+  ctx.say(t);
+  ctx.noura?.nod();
+};

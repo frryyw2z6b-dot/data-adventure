@@ -2,7 +2,7 @@
 import * as THREE from 'three';
 import { createItem, createBasket, setGlow } from '../models.js';
 import { MAX_TRIES } from '../../shared/scoring.js';
-import { PRAISE, TRY_AGAIN, pickOne, arcTo, shake, dropIn, layoutSpots, hop, onAbort } from './common.js';
+import { praise, tryAgain, arcTo, shake, dropIn, layoutSpots, hop, onAbort } from './common.js';
 import { ease } from '../tween.js';
 
 const DRAG_Y = 0.85;
@@ -10,6 +10,8 @@ const BIN_RADIUS = 1.2;
 
 export function runSort(ctx, q) {
   const { engine, board, pointer, audio, fx, ui } = ctx;
+  ctx.director.frame('rug');
+  ctx.dataBoard.hide();
 
   // السلال في الصف الخلفي
   const n = q.bins.length;
@@ -132,7 +134,9 @@ export function runSort(ctx, q) {
       await intoBasket(it, basket);
       audio.correct();
       fx.burst(new THREE.Vector3(basket.position.x, 0.9, basket.position.z));
-      ui.toast(pickOne(PRAISE), 'good');
+      // تشجيع منطوق عند اكتمال نصف العناصر وعند آخرها فقط حتى لا يتكرر الكلام
+      if (placed.size === items.length || placed.size === Math.ceil(items.length / 2)) praise(ctx);
+      else ui.toast('✓', 'good', 600);
     } else {
       mistakes[id] = (mistakes[id] || 0) + 1;
       audio.wrong();
@@ -141,13 +145,14 @@ export function runSort(ctx, q) {
         // بعد ثلاث محاولات: يرشدها شاهين إلى المكان الصحيح
         revealed = true;
         placed.add(id);
-        ui.toast('انظري… هذا مكانها الصحيح', 'hint', 1800);
+        ui.toast(ctx.LINES.revealSort, 'hint', 1800);
+        ctx.say(ctx.LINES.revealSort);
         const right = binById[it.userData.spec.bin];
         setGlow(it, 0.7, '#7fd3ff');
         await intoBasket(it, right);
         setGlow(it, 0);
       } else {
-        ui.toast(pickOne(TRY_AGAIN), 'try');
+        tryAgain(ctx);
         await goHome(it);
       }
     }

@@ -114,6 +114,21 @@ export async function createStudentBackend(config) {
       return { ...session };
     },
 
+    async lookupClass(rawCode) {
+      const code = normalizeCode(rawCode);
+      if (!CODE_PATTERN.test(code)) throw new BackendError('bad-code');
+      try {
+        await ensureSignedIn();
+        const snap = await getDoc(doc(db, 'classes', code));
+        if (!snap.exists()) throw new BackendError('class-not-found');
+        const cls = snap.data();
+        if (!cls.active) throw new BackendError('class-inactive');
+        return { code, name: cls.name, roster: Array.isArray(cls.roster) ? cls.roster : [] };
+      } catch (err) {
+        throw mapError(err);
+      }
+    },
+
     async joinClass(rawCode, rawName) {
       const code = normalizeCode(rawCode);
       const name = normalizeName(rawName);
@@ -125,6 +140,7 @@ export async function createStudentBackend(config) {
         if (!clsSnap.exists()) throw new BackendError('class-not-found');
         const cls = clsSnap.data();
         if (!cls.active) throw new BackendError('class-inactive');
+        if (Array.isArray(cls.roster) && cls.roster.length && !cls.roster.includes(name)) throw new BackendError('not-in-roster');
 
         const meRef = doc(db, 'classes', code, 'students', user.uid);
         const meSnap = await getDoc(meRef);
@@ -138,7 +154,7 @@ export async function createStudentBackend(config) {
         }
         session = { code, uid: user.uid, name: finalName, className: cls.name };
         writeSession(session);
-        return { ...session };
+        return { ...session, stage: currentStage };
       } catch (err) {
         throw mapError(err);
       }
@@ -240,6 +256,10 @@ export async function createTeacherBackend(config) {
         }
       }
       throw new BackendError('unknown', 'could not allocate class code');
+    },
+
+    async setRoster(code, names) {
+      await updateDoc(doc(db, 'classes', code), { roster: names.map(normalizeName).filter(Boolean).slice(0, 40) });
     },
 
     async setClassActive(code, active) {

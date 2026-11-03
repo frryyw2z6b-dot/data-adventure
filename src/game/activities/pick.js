@@ -2,10 +2,12 @@
 import * as THREE from 'three';
 import { createItem, setGlow, setDim } from '../models.js';
 import { MAX_TRIES } from '../../shared/scoring.js';
-import { PRAISE, TRY_AGAIN, pickOne, shake, hop, dropIn, onAbort } from './common.js';
+import { praise, tryAgain, shake, hop, dropIn, onAbort } from './common.js';
 
 export function runPick(ctx, q) {
   const { engine, board, pointer, audio, fx, ui } = ctx;
+  ctx.director.frame('rug');
+  ctx.dataBoard.hide();
   const n = q.items.length;
   const gap = Math.min(1.7, 7 / Math.max(n - 1, 1));
   const order = [...q.items].sort(() => Math.random() - 0.5);
@@ -64,7 +66,7 @@ export function runPick(ctx, q) {
           audio.correct();
           setGlow(it, 0.6);
           fx.burst(it.position.clone().add(new THREE.Vector3(0, 0.6, 0)), { count: 60 });
-          ui.toast(pickOne(PRAISE), 'good');
+          praise(ctx);
           hop(engine, it, 0.9, 0.7, 1);
           finish(false);
         } else {
@@ -77,12 +79,13 @@ export function runPick(ctx, q) {
           if (attempts.length >= MAX_TRIES || remaining === 0) {
             locked = true;
             const right = items.find((x) => x.userData.itemId === q.answer);
-            ui.toast('انظري… هذه هي الإجابة', 'hint', 1800);
+            ui.toast(ctx.LINES.revealAnswer, 'hint', 1800);
+            ctx.say(ctx.LINES.revealAnswer);
             setGlow(right, 0.7, '#7fd3ff');
             await hop(engine, right, 0.7, 0.7, 1);
             finish(true);
           } else {
-            ui.toast(pickOne(TRY_AGAIN), 'try');
+            tryAgain(ctx);
           }
         }
       },
@@ -98,6 +101,6 @@ export function runPick(ctx, q) {
       reject,
     );
     dropIn(engine, audio, items);
-    ctx.debug.current = { type: 'pick', items };
+    ctx.debug.current = { type: 'pick', items, ready: true };
   });
 }

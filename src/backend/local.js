@@ -87,6 +87,15 @@ export function createStudentBackend() {
       return { ...session };
     },
 
+    async lookupClass(rawCode) {
+      const code = normalizeCode(rawCode);
+      if (!CODE_PATTERN.test(code)) throw new BackendError('bad-code');
+      const cls = classes()[code];
+      if (!cls) throw new BackendError('class-not-found');
+      if (!cls.active) throw new BackendError('class-inactive');
+      return { code, name: cls.name, roster: cls.roster || [] };
+    },
+
     async joinClass(rawCode, rawName) {
       const code = normalizeCode(rawCode);
       const name = normalizeName(rawName);
@@ -95,6 +104,7 @@ export function createStudentBackend() {
       const cls = classes()[code];
       if (!cls) throw new BackendError('class-not-found');
       if (!cls.active) throw new BackendError('class-inactive');
+      if (cls.roster?.length && !cls.roster.includes(name)) throw new BackendError('not-in-roster');
 
       const students = studentsOf(code);
       // في الوضع المحلي: الاسم نفسه في الفصل نفسه يعيد الطالبة لسجلها
@@ -107,7 +117,7 @@ export function createStudentBackend() {
       }
       session = { code, uid, name: students[uid].name, className: cls.name };
       safeStorage.set('session', session);
-      return { ...session };
+      return { ...session, stage: students[uid].stage || 0 };
     },
 
     async recordAnswer({ stageId, questionId, attempts, revealed, contentVersion }) {
@@ -177,6 +187,14 @@ export function createTeacherBackend() {
       all[code] = { teacherUid: LOCAL_TEACHER, name, active: true, createdAt: Date.now() };
       safeStorage.set('classes', all);
       return { code, ...all[code] };
+    },
+
+    async setRoster(code, names) {
+      const all = classes();
+      if (!all[code]) return;
+      all[code].roster = names.map(normalizeName).filter(Boolean).slice(0, 40);
+      safeStorage.set('classes', all);
+      notify(code);
     },
 
     async setClassActive(code, active) {

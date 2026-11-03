@@ -3,13 +3,15 @@ import '@fontsource/baloo-bhaijaan-2/700.css';
 import '../styles/teacher.css';
 import { getTeacherBackend } from '../backend/index.js';
 import { errorMessage } from '../backend/errors.js';
-import { STAGES, getQuestion } from '../content/stages.js';
-import { scoreQuestion, firstRecords } from '../shared/scoring.js';
+import { STAGES, SKILLS, ALL_QUESTIONS, getQuestion } from '../content/stages.js';
+import { scoreQuestion } from '../shared/scoring.js';
+import { summarize, classSkills, questionStats, toCsv } from './analytics.js';
 import { describeAttempt, questionShort } from './describe.js';
 
 const $ = (s) => document.querySelector(s);
 const toAr = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
 const pct = (x) => `${toAr(Math.round(x * 100))}٪`;
+const level = (x) => (x == null ? '' : x >= 0.8 ? 'hi' : x >= 0.6 ? 'mid' : 'lo');
 const esc = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const rtf = new Intl.RelativeTimeFormat('ar', { numeric: 'auto', style: 'short' });
@@ -22,11 +24,6 @@ function ago(ms) {
   return rtf.format(Math.round(s / 86400), 'day');
 }
 
-// كل الأسئلة المتاحة حاليًا مرتبة حسب المرحلة
-const ALL_QUESTIONS = STAGES.filter((s) => s.content).flatMap((s) =>
-  s.content.questions.map((q) => ({ ...q, stageId: s.id })),
-);
-
 const state = {
   backend: null,
   classes: [],
@@ -37,7 +34,10 @@ const state = {
   seen: new Set(),
   firstLoad: true,
   openStudent: null,
+  rows: [],
 };
+// للفحص الآلي
+window.__teacher = state;
 
 async function boot() {
   const backend = await getTeacherBackend();
@@ -45,11 +45,6 @@ async function boot() {
   if (backend.mode === 'local') {
     $('#mode-pill').hidden = false;
     $('#mode-pill').textContent = 'وضع تجريبي محلي — البيانات في هذا المتصفح فقط';
-  }
-  const drafts = STAGES.filter((s) => s.content?.status === 'draft');
-  if (drafts.length) {
-    $('#draft-note').hidden = false;
-    $('#draft-note').textContent = `تنبيه: أسئلة ${drafts.map((s) => `«${s.title}»`).join('، ')} تجريبية حتى تُراجَع مع صفحات الكتاب.`;
   }
 
   backend.onTeacherAuth(async (user) => {
@@ -85,25 +80,37 @@ async function boot() {
   });
   $('#logout').addEventListener('click', () => backend.teacherSignOut());
   $('#class-select').addEventListener('change', (e) => selectClass(e.target.value));
-  $('#new-class').addEventListener('click', createClass);
+  $('#new-class').addEventListener('click', () => {
+    $('#class-form').reset();
+    $('#class-error').hidden = true;
+    $('#class-dialog').showModal();
+  });
+  $('#class-form').addEventListener('submit', submitClass);
+  $('#roster-btn').addEventListener('click', openRoster);
+  $('#roster-form').addEventListener('submit', saveRoster);
+  $('#roster-text').addEventListener('input', countRoster);
+  document.querySelectorAll('dialog [data-cancel]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
+  $('#join-screen').addEventListener('click', openJoin);
+  $('#copy-link').addEventListener('click', copyLink);
   $('#toggle-class').addEventListener('click', toggleClass);
   $('#export').addEventListener('click', exportCsv);
   $('#search').addEventListener('input', render);
   $('#sd-remove').addEventListener('click', () => askRemove(true));
   $('#sd-remove-no').addEventListener('click', () => askRemove(false));
   $('#sd-remove-yes').addEventListener('click', removeStudent);
-  $('#class-form').addEventListener('submit', submitClass);
-  $('#class-dialog [data-cancel]').addEventListener('click', () => $('#class-dialog').close());
   setInterval(render, 30000); // تحديث «آخر نشاط»
 }
 
 async function loadClasses(selectCode) {
   state.classes = await state.backend.listMyClasses();
   const sel = $('#class-select');
-  sel.innerHTML = state.classes
-    .map((c) => `<option value="${esc(c.code)}">${esc(c.name)} (${esc(c.code)})</option>`)
-    .join('');
-  const remembered = selectCode || localStorage.getItem('da:v1:teacher-class');
+  sel.innerHTML = state.classes.map((c) => `<option value="${esc(c.code)}">${esc(c.name)} (${esc(c.code)})</option>`).join('');
+  let remembered = selectCode;
+  try {
+    remembered ||= localStorage.getItem('da:v1:teacher-class');
+  } catch {
+    /* ignore */
+  }
   const code = state.classes.find((c) => c.code === remembered)?.code || state.classes.at(-1)?.code;
   if (code) {
     sel.value = code;
@@ -127,7 +134,11 @@ function selectClass(code) {
   state.seen = new Set();
   state.firstLoad = true;
   if (!state.current) return render();
-  localStorage.setItem('da:v1:teacher-class', code);
+  try {
+    localStorage.setItem('da:v1:teacher-class', code);
+  } catch {
+    /* ignore */
+  }
   $('#class-code').textContent = code;
   // الاستماع اللحظي (Realtime) لطالبات الفصل وإجاباتهن
   state.unsub.push(
@@ -142,14 +153,6 @@ function selectClass(code) {
     }),
   );
   render();
-}
-
-function createClass() {
-  const dlg = $('#class-dialog');
-  $('#class-form').reset();
-  $('#class-error').hidden = true;
-  dlg.showModal();
-  $('#class-name').focus();
 }
 
 async function submitClass(e) {
@@ -168,6 +171,53 @@ async function submitClass(e) {
   }
 }
 
+function openRoster() {
+  if (!state.current) return;
+  $('#roster-text').value = (state.current.roster || []).join('\n');
+  countRoster();
+  $('#roster-dialog').showModal();
+}
+function rosterNames() {
+  return [...new Set($('#roster-text').value.split('\n').map((s) => s.replace(/\s+/g, ' ').trim()).filter(Boolean))].slice(0, 40);
+}
+function countRoster() {
+  $('#roster-count').textContent = `عدد الأسماء: ${toAr(rosterNames().length)} (الحد الأعلى ٤٠)`;
+}
+async function saveRoster(e) {
+  e.preventDefault();
+  const names = rosterNames();
+  await state.backend.setRoster(state.current.code, names);
+  state.current.roster = names;
+  $('#roster-dialog').close();
+  render();
+}
+
+function gameLink() {
+  const url = new URL('./', location.href);
+  if (state.current) url.searchParams.set('class', state.current.code);
+  return url.href;
+}
+function openJoin() {
+  if (!state.current) return;
+  $('#jd-code').textContent = state.current.code;
+  $('#jd-link').textContent = gameLink();
+  $('#join-dialog').showModal();
+}
+async function copyLink() {
+  const btn = $('#copy-link');
+  try {
+    await navigator.clipboard.writeText(gameLink());
+    btn.textContent = 'نُسخ ✓';
+  } catch {
+    const r = document.createRange();
+    r.selectNodeContents($('#jd-link'));
+    getSelection().removeAllRanges();
+    getSelection().addRange(r);
+    btn.textContent = 'انسخيه يدويًا';
+  }
+  setTimeout(() => (btn.textContent = 'نسخ الرابط'), 2000);
+}
+
 async function toggleClass() {
   const c = state.current;
   if (!c) return;
@@ -176,31 +226,13 @@ async function toggleClass() {
   render();
 }
 
-// ── الحسابات ──
-function summarize() {
-  const byStudent = new Map(state.students.map((s) => [s.uid, { ...s, answers: [] }]));
-  for (const a of state.answers) {
-    if (!byStudent.has(a.uid)) byStudent.set(a.uid, { uid: a.uid, name: 'طالبة محذوفة', stage: 0, answers: [] });
-    byStudent.get(a.uid).answers.push(a);
-  }
-  const rows = [...byStudent.values()].map((s) => {
-    const { map, replays } = firstRecords(s.answers);
-    let total = 0;
-    let first = 0;
-    const per = [];
-    for (const [qid, rec] of map) {
-      const q = getQuestion(rec.stageId, qid);
-      const r = scoreQuestion(q, rec);
-      total += r.score;
-      if (r.firstTry) first++;
-      per.push({ q, rec, r, replays: replays.get(qid) || 0 });
-    }
-    const answered = map.size;
-    const last = s.answers.reduce((m, a) => Math.max(m, a.ts || 0), s.updatedAt || s.joinedAt || 0);
-    return { ...s, answered, score: answered ? total / answered : null, first, per, last };
-  });
-  rows.sort((a, b) => b.last - a.last);
-  return rows;
+function stageChips(r) {
+  return `<span class="stages">${STAGES.map((s) => {
+    const v = r.stageScores[s.id];
+    if (!v) return `<i class="chip empty" title="${esc(s.title)}">${toAr(s.id)}</i>`;
+    if (!v.done) return `<i class="chip wip" title="${esc(s.title)}: ${toAr(v.answered)} من ${toAr(v.total)}">${toAr(v.answered)}/${toAr(v.total)}</i>`;
+    return `<i class="chip ${level(v.score)}" title="${esc(s.title)}">${pct(v.score)}</i>`;
+  }).join('')}</span>`;
 }
 
 function render() {
@@ -212,66 +244,78 @@ function render() {
     btn.classList.toggle('danger', c.active);
     $('#class-code').classList.toggle('closed', !c.active);
   }
-  const rows = summarize();
-  const totalQs = ALL_QUESTIONS.length;
-  const scored = rows.filter((r) => r.score != null);
-  $('#k-students').textContent = toAr(state.students.length);
+  const roster = c?.roster || [];
+  const rows = summarize(state.students, state.answers, roster);
+  state.rows = rows;
+  const joined = rows.filter((r) => r.joined);
+  const scored = joined.filter((r) => r.score != null);
+  $('#k-students').textContent = roster.length ? `${toAr(joined.length)} / ${toAr(roster.length)}` : toAr(joined.length);
   $('#k-answers').textContent = toAr(state.answers.length);
   $('#k-avg').textContent = scored.length ? pct(scored.reduce((s, r) => s + r.score, 0) / scored.length) : '—';
-  $('#k-done').textContent = toAr(state.students.filter((s) => (s.stage || 0) >= 1).length);
+  $('#k-done').textContent = toAr(joined.filter((r) => r.stagesDone === STAGES.length).length);
 
   // جدول الطالبات
   const term = $('#search').value.trim();
+  const sorted = [...rows].sort((a, b) => Number(b.joined) - Number(a.joined) || b.last - a.last || a.name.localeCompare(b.name, 'ar'));
+  const visible = sorted.filter((r) => !term || r.name?.includes(term));
   const tbody = $('#students-table tbody');
-  const visible = rows.filter((r) => !term || r.name?.includes(term));
   tbody.innerHTML = visible
     .map((r) => {
-      const level = r.score == null ? '' : r.score >= 0.8 ? 'hi' : r.score >= 0.5 ? 'mid' : 'lo';
+      if (!r.joined) {
+        return `<tr class="absent"><td class="name">${esc(r.name)}</td><td colspan="5" class="muted">لم تدخل بعد</td></tr>`;
+      }
       return `<tr data-uid="${esc(r.uid)}" tabindex="0">
-        <td class="name">${esc(r.name)}</td>
-        <td>${r.stage >= 1 ? `أنهت ${toAr(r.stage)}` : r.answered ? 'تلعب الآن' : 'انضمت'}</td>
-        <td><span class="mini-bar"><i style="width:${(r.answered / totalQs) * 100}%"></i></span> ${toAr(r.answered)}/${toAr(totalQs)}</td>
-        <td><span class="score ${level}">${r.score == null ? '—' : pct(r.score)}</span></td>
-        <td>${r.answered ? `${toAr(r.first)} من ${toAr(r.answered)}` : '—'}</td>
+        <td class="name">${esc(r.name)}${r.duplicate ? ' <span class="warn" title="دخلت بالاسم نفسه من أكثر من جهاز">⚠</span>' : ''}</td>
+        <td>${stageChips(r)}</td>
+        <td><span class="score ${level(r.score)}">${r.score == null ? '—' : pct(r.score)}</span></td>
+        <td>${toAr(r.attempts)}${r.wrongAttempts ? ` <span class="muted">(${toAr(r.wrongAttempts)} خطأ)</span>` : ''}</td>
+        <td class="skills-cell">${r.weakSkills.length ? r.weakSkills.slice(0, 3).map((k) => `<i class="skill-chip">${esc(SKILLS[k])}</i>`).join('') : r.answered ? '<span class="ok-text">لا شيء</span>' : '—'}</td>
         <td class="muted">${ago(r.last)}</td>
       </tr>`;
     })
     .join('');
   $('#empty-students').hidden = rows.length > 0;
-  tbody.querySelectorAll('tr').forEach((tr) => {
+  tbody.querySelectorAll('tr[data-uid]').forEach((tr) => {
     const open = () => openStudent(tr.dataset.uid);
     tr.addEventListener('click', open);
     tr.addEventListener('keydown', (e) => e.key === 'Enter' && open());
   });
 
+  // مهارات الفصل
+  $('#skills').innerHTML = classSkills(joined)
+    .map(
+      (s) => `<li>
+        <div class="q-top"><span class="q-text">${esc(s.label)}</span></div>
+        <div class="q-bar"><i class="${level(s.avg)}" style="width:${(s.avg || 0) * 100}%"></i></div>
+        <div class="q-meta"><span>${s.avg == null ? 'لا إجابات بعد' : `متوسط ${pct(s.avg)}`}</span><span>${s.needSupport.length ? `تحتاج دعمًا: ${esc(s.needSupport.slice(0, 4).join('، '))}${s.needSupport.length > 4 ? '…' : ''}` : ''}</span></div>
+      </li>`,
+    )
+    .join('');
+
   // آخر الإجابات (مباشر)
   const names = new Map(state.students.map((s) => [s.uid, s.name]));
   const recent = [...state.answers].sort((a, b) => (b.ts || 0) - (a.ts || 0)).slice(0, 14);
-  $('#feed').innerHTML = recent
-    .map((a) => {
-      const q = getQuestion(a.stageId, a.questionId);
-      const r = scoreQuestion(q, a);
-      const fresh = !state.firstLoad && !state.seen.has(a.id);
-      return `<li class="${fresh ? 'fresh' : ''}">
+  $('#feed').innerHTML =
+    recent
+      .map((a) => {
+        const q = getQuestion(a.stageId, a.questionId);
+        const r = scoreQuestion(q, a);
+        const fresh = !state.firstLoad && !state.seen.has(a.id);
+        return `<li class="${fresh ? 'fresh' : ''}">
         <span class="res ${r.firstTry ? 'ok' : r.solved ? 'part' : 'no'}">${r.firstTry ? '✓' : r.solved ? '↻' : '✗'}</span>
-        <span><b>${esc(names.get(a.uid) || '—')}</b> · ${esc(questionShort(q, a.questionId))}</span>
+        <span><b>${esc(names.get(a.uid) || '—')}</b> · م${toAr(a.stageId)} · ${esc(questionShort(q, a.questionId))}</span>
         <time>${ago(a.ts)}</time>
       </li>`;
-    })
-    .join('') || '<li class="empty">ستظهر الإجابات هنا فور وصولها.</li>';
+      })
+      .join('') || '<li class="empty">ستظهر الإجابات هنا فور وصولها.</li>';
   state.answers.forEach((a) => state.seen.add(a.id));
 
   // أداء الفصل لكل سؤال
-  const perQ = ALL_QUESTIONS.map((q) => {
-    const recs = rows.map((r) => r.per.find((p) => p.q?.id === q.id)).filter(Boolean);
-    const avg = recs.length ? recs.reduce((s, p) => s + p.r.score, 0) / recs.length : null;
-    return { q, n: recs.length, avg };
-  });
-  $('#questions').innerHTML = perQ
+  $('#questions').innerHTML = questionStats(joined)
     .map(
       ({ q, n, avg }) => `<li>
         <div class="q-top"><span class="q-tag">م${toAr(q.stageId)}</span><span class="q-text">${esc(q.prompt)}</span></div>
-        <div class="q-bar"><i class="${avg == null ? '' : avg >= 0.8 ? 'hi' : avg >= 0.5 ? 'mid' : 'lo'}" style="width:${(avg || 0) * 100}%"></i></div>
+        <div class="q-bar"><i class="${level(avg)}" style="width:${(avg || 0) * 100}%"></i></div>
         <div class="q-meta"><span>${avg == null ? 'لا إجابات بعد' : `متوسط ${pct(avg)}`}</span><span>${toAr(n)} إجابة</span></div>
       </li>`,
     )
@@ -283,31 +327,39 @@ function render() {
 function openStudent(uid) {
   state.openStudent = uid;
   renderStudent(uid);
+  askRemove(false);
   const dlg = $('#student-dialog');
   if (!dlg.open) dlg.showModal();
-  askRemove(false);
   dlg.addEventListener('close', () => (state.openStudent = null), { once: true });
 }
 
 function renderStudent(uid) {
-  const r = summarize().find((x) => x.uid === uid);
+  const r = state.rows.find((x) => x.uid === uid);
   if (!r) return;
   $('#sd-name').textContent = r.name;
-  const byQ = new Map(r.per.map((p) => [p.q?.id, p]));
+  const byQ = new Map(r.per.map((p) => [p.q.id, p]));
+  const skillList = Object.entries(r.skillScores).sort((a, b) => a[1].score - b[1].score);
   $('#sd-body').innerHTML = `
-    <p class="sd-summary">الدرجة: <b>${r.score == null ? '—' : pct(r.score)}</b> · أجابت ${toAr(r.answered)} من ${toAr(ALL_QUESTIONS.length)} سؤال</p>
-    <ol class="sd-list">
-      ${ALL_QUESTIONS.map((q) => {
-        const p = byQ.get(q.id);
-        if (!p) return `<li class="pending"><p class="q">${esc(q.prompt)}</p><p class="muted">لم تصل إليه بعد</p></li>`;
-        const steps = p.rec.attempts.map((a) => describeAttempt(q, a));
-        return `<li>
-          <div class="sd-q"><span class="res ${p.r.firstTry ? 'ok' : p.r.solved ? 'part' : 'no'}">${p.r.firstTry ? '✓' : p.r.solved ? '↻' : '✗'}</span><p class="q">${esc(q.prompt)}</p><span class="score">${pct(p.r.score)}</span></div>
-          <p class="muted">${esc(toAr(p.r.detail))}${p.rec.revealed ? ' · عُرضت عليها الإجابة' : ''}${p.replays ? ` · أعادت المحاولة ${toAr(p.replays)} مرة` : ''}</p>
-          <ol class="steps">${steps.map((s) => `<li class="${s.ok ? 'ok' : 'no'}">${esc(s.text)}</li>`).join('')}</ol>
-        </li>`;
-      }).join('')}
-    </ol>`;
+    <p class="sd-summary">الدرجة: <b>${r.score == null ? '—' : pct(r.score)}</b> · أجابت ${toAr(r.answered)} من ${toAr(ALL_QUESTIONS.length)} سؤالًا · ${toAr(r.attempts)} محاولة</p>
+    <div class="sd-stages">${stageChips(r)}</div>
+    ${skillList.length ? `<h3>المهارات</h3><ul class="sd-skills">${skillList.map(([k, v]) => `<li><span>${esc(SKILLS[k])}</span><span class="score ${level(v.score)}">${pct(v.score)}</span></li>`).join('')}</ul>` : ''}
+    ${STAGES.map(
+      (s) => `<h3>المرحلة ${toAr(s.id)}: ${esc(s.title)}</h3>
+      <ol class="sd-list">
+      ${s.content.questions
+        .map((q) => {
+          const p = byQ.get(q.id);
+          if (!p) return `<li class="pending"><p class="q">${esc(q.prompt)}</p><p class="muted">لم تصل إليه بعد</p></li>`;
+          const steps = p.rec.attempts.map((a) => describeAttempt(q, a));
+          return `<li>
+            <div class="sd-q"><span class="res ${p.r.firstTry ? 'ok' : p.r.solved ? 'part' : 'no'}">${p.r.firstTry ? '✓' : p.r.solved ? '↻' : '✗'}</span><p class="q">${esc(q.prompt)}</p><span class="score">${pct(p.r.score)}</span></div>
+            <p class="muted">${esc(toAr(p.r.detail))}${p.rec.revealed ? ' · عُرضت عليها الإجابة' : ''}${p.replays ? ` · أعادت المحاولة ${toAr(p.replays)} مرة` : ''}</p>
+            <ol class="steps">${steps.map((st) => `<li class="${st.ok ? 'ok' : 'no'}">${esc(st.text)}</li>`).join('')}</ol>
+          </li>`;
+        })
+        .join('')}
+      </ol>`,
+    ).join('')}`;
 }
 
 function askRemove(show) {
@@ -324,27 +376,14 @@ async function removeStudent() {
 }
 
 function exportCsv() {
-  const rows = summarize();
-  const header = ['الطالبة', 'المرحلة المكتملة', 'عدد الأسئلة المجابة', 'الدرجة %', ...ALL_QUESTIONS.map((q) => q.id)];
-  const lines = [header];
-  for (const r of rows) {
-    const byQ = new Map(r.per.map((p) => [p.q?.id, p]));
-    lines.push([
-      r.name,
-      r.stage || 0,
-      r.answered,
-      r.score == null ? '' : Math.round(r.score * 100),
-      ...ALL_QUESTIONS.map((q) => (byQ.has(q.id) ? Math.round(byQ.get(q.id).r.score * 100) : '')),
-    ]);
-  }
-  const csv = lines
-    .map((l) => l.map((v) => `"${String(v).replace(/"/g, '""').replace(/^[=+\-@]/, "'$&")}"`).join(','))
-    .join('\r\n');
-  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+  const csv = toCsv(state.rows);
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `نتائج-${state.current?.code || 'الفصل'}.csv`;
+  a.download = `نتائج-${state.current?.code || 'الفصل'}-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }
 

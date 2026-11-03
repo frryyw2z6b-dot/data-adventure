@@ -176,6 +176,28 @@ describe('الطالبة', () => {
   });
 });
 
+describe('قائمة الأسماء', () => {
+  beforeEach(async () => {
+    await env.withSecurityRulesDisabled((ctx) => updateDoc(doc(ctx.firestore(), `classes/${CODE}`), { roster: ['ريم', 'هيا'] }));
+  });
+
+  it('لا تنضم إلا طالبة اسمها في القائمة', async () => {
+    await assertSucceeds(
+      setDoc(doc(anon('s5'), `classes/${CODE}/students/s5`), { name: 'ريم', stage: 0, joinedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+    await assertFails(
+      setDoc(doc(anon('s6'), `classes/${CODE}/students/s6`), { name: 'غريبة', stage: 0, joinedAt: serverTimestamp(), updatedAt: serverTimestamp() }),
+    );
+  });
+
+  it('المعلمة فقط تعدّل القائمة، وبحد أعلى ٤٠ اسمًا', async () => {
+    await assertSucceeds(updateDoc(doc(teacher('t1'), `classes/${CODE}`), { roster: ['ريم'] }));
+    await assertFails(updateDoc(doc(anon('s1'), `classes/${CODE}`), { roster: ['ريم'] }));
+    await assertFails(updateDoc(doc(teacher('t2'), `classes/${CODE}`), { roster: ['ريم'] }));
+    await assertFails(updateDoc(doc(teacher('t1'), `classes/${CODE}`), { roster: Array.from({ length: 41 }, (_, i) => `ط${i}`) }));
+  });
+});
+
 describe('المعلمة', () => {
   it('تقرأ طالبات وإجابات فصلها لحظيًا', async () => {
     const db = teacher('t1');

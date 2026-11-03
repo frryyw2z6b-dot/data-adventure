@@ -309,7 +309,7 @@ export function buildWorld(engine) {
     motes.update(dt, t);
   });
 
-  return { root, sun, rug };
+  return { root, sun, rug, skyMat, hemi, rim, fill, fire, lanterns };
 }
 
 function addInstanced(root, geo, mat, list, castShadow) {
@@ -472,13 +472,14 @@ function campfire() {
   group.add(light);
   return {
     group,
+    light,
     update(t) {
       flames.forEach((f, i) => {
         const k = 1 + Math.sin(t * (9 + i * 3) + i) * 0.12 + Math.sin(t * 17 + i) * 0.06;
         f.scale.set(1 / k, k, 1 / k);
         f.rotation.y = t * (1 + i);
       });
-      light.intensity = 5.5 + Math.sin(t * 13) * 0.8 + Math.sin(t * 7.3) * 0.6;
+      light.intensity = (this.boost || 1) * (5.5 + Math.sin(t * 13) * 0.8 + Math.sin(t * 7.3) * 0.6);
     },
   };
 }
@@ -506,10 +507,12 @@ function lantern() {
   light.position.y = 1.92;
   group.add(light);
   const seed = Math.random() * 10;
+  const level = { v: 2.1 };
   return {
     group,
+    base: level,
     update(t) {
-      light.intensity = 2.1 + Math.sin(t * 6 + seed) * 0.15;
+      light.intensity = level.v + Math.sin(t * 6 + seed) * 0.15;
     },
   };
 }
