@@ -434,6 +434,7 @@ body {
 /* الخريطة */
 .map-screen {
   justify-content: flex-start;
+  padding-top: calc(max(16px, env(safe-area-inset-top)) + 64px);
   gap: 18px;
   background: linear-gradient(180deg, rgba(43, 35, 71, 0.5), rgba(43, 35, 71, 0) 40%);
   overflow-y: auto;
