@@ -243,6 +243,29 @@ describe('المعلمة', () => {
     );
   });
 
+  it('المعلمة ببريدها المعتمد دون مستند teachers', async () => {
+    await env.withSecurityRulesDisabled((ctx) => updateDoc(doc(ctx.firestore(), `classes/${CODE}`), { teacherUid: 'byEmail' }));
+    const db = env.authenticatedContext('byEmail', { email: 'asmarieman@hotmail.com', firebase: { sign_in_provider: 'password' } }).firestore();
+    await assertSucceeds(getDocs(collection(db, `classes/${CODE}/answers`)));
+    await assertSucceeds(
+      setDoc(doc(db, 'classes/MAKE23'), { teacherUid: 'byEmail', name: 'x', active: true, createdAt: serverTimestamp() }),
+    );
+  });
+
+  it('بريد آخر غير معتمد لا يُعامل كمعلمة', async () => {
+    const db = env.authenticatedContext('other', { email: 'someone@x.com', firebase: { sign_in_provider: 'password' } }).firestore();
+    await assertFails(
+      setDoc(doc(db, 'classes/MAKE24'), { teacherUid: 'other', name: 'x', active: true, createdAt: serverTimestamp() }),
+    );
+  });
+
+  it('حساب مجهول يحمل البريد المعتمد لا يُعامل كمعلمة', async () => {
+    const db = env.authenticatedContext('anonMail', { email: 'asmarieman@hotmail.com', firebase: { sign_in_provider: 'anonymous' } }).firestore();
+    await assertFails(
+      setDoc(doc(db, 'classes/MAKE25'), { teacherUid: 'anonMail', name: 'x', active: true, createdAt: serverTimestamp() }),
+    );
+  });
+
   it('حساب مجهول يحمل uid معلمة لا يُعامل كمعلمة', async () => {
     const db = anon('t1');
     await assertFails(getDocs(collection(db, `classes/${CODE}/answers`)));

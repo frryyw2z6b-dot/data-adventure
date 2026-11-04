@@ -196,11 +196,19 @@ export async function createTeacherBackend(config) {
   const db = initializeFirestore(app, { localCache: memoryLocalCache() });
   wireEmulators(auth, db);
 
+  // بريد المعلمات المعتمَد (يطابق القائمة في firestore.rules)
+  const TEACHER_EMAILS = String(import.meta.env.VITE_TEACHER_EMAILS || '')
+    .split(',')
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+
   async function assertTeacher(user) {
+    if (user.email && TEACHER_EMAILS.includes(user.email.toLowerCase())) return;
     const snap = await getDoc(doc(db, 'teachers', user.uid));
     if (!snap.exists()) {
       await signOut(auth);
-      throw new BackendError('not-teacher');
+      // نعرض رمز الحساب حتى يسهل التحقق من مطابقته لمستند /teachers
+      throw new BackendError('not-teacher', user.uid);
     }
   }
 

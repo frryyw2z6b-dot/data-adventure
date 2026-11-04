@@ -19,5 +19,8 @@ export const ERROR_MESSAGES = {
 };
 
 export function errorMessage(err) {
+  if (err?.code === 'not-teacher' && err.message && err.message !== 'not-teacher') {
+    return `${ERROR_MESSAGES['not-teacher']} (رمز الحساب: ${err.message})`;
+  }
   return ERROR_MESSAGES[err?.code] || ERROR_MESSAGES.unknown;
 }

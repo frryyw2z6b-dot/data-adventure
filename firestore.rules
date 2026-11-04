@@ -26,10 +26,13 @@ service cloud.firestore {
       return request.auth.token.firebase.sign_in_provider == 'anonymous';
     }
 
+    // المعلمة: بريدها في هذه القائمة، أو لها مستند في /teachers/{uid}.
+    // (البريد فريد في Firebase، فلا يستطيع أحد إنشاء حساب آخر ببريد مسجَّل)
     function isTeacher() {
       return signedIn()
         && !isAnonymous()
-        && exists(/databases/$(database)/documents/teachers/$(request.auth.uid));
+        && (request.auth.token.email in ['asmarieman@hotmail.com']
+            || exists(/databases/$(database)/documents/teachers/$(request.auth.uid)));
     }
 
     function classData(code) {
