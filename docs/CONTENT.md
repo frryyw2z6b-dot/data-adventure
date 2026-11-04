@@ -118,7 +118,7 @@ npm run dev  # جرّبي الأسئلة في المتصفح
 
 ```bash
 node tools/voice/list-lines.mjs > tools/voice/lines.json
-python tools/voice/generate.py --model-dir <vits-piper-ar_JO-kareem-medium> --asr-dir <sherpa-onnx-whisper-small>
+python tools/voice/generate.py --model-dir <vits-piper-ar_JO-SA_dii-high> --asr-dir <sherpa-onnx-whisper-small> --speed 0.88
 ```
 
 الأداة تولّد ٣ نسخ لكل جملة وتختار أوضحها بعد تفريغها بنموذج Whisper، وتكتب تقريرًا في `tools/voice/report.json`.
