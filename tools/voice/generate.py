@@ -3,15 +3,15 @@
 
 المتطلبات (مرة واحدة):
   pip install sherpa-onnx==1.12.40 soundfile numpy
-  نموذج الصوت: vits-piper-ar_JO-kareem-medium من إصدارات sherpa-onnx على GitHub
-    https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ar_JO-kareem-medium.tar.bz2
+  نموذج الصوت: vits-piper-ar_JO-SA_dii-high من إصدارات sherpa-onnx على GitHub
+    https://github.com/k2-fsa/sherpa-onnx/releases/download/tts-models/vits-piper-ar_JO-SA_dii-high.tar.bz2
   ffmpeg مع مرشح rubberband
 
-الاستخدام:
+الاستخدام (صوت نورة المعتمد: صوت نسائي سعودي ar_JO-SA_dii-high):
   node tools/voice/list-lines.mjs > tools/voice/lines.json
-  python tools/voice/generate.py --model-dir <مجلد النموذج> [--asr-dir <مجلد whisper>]
+  python tools/voice/generate.py --model-dir <vits-piper-ar_JO-SA_dii-high> --asr-dir <whisper> --speed 0.88
 
-يرفع طبقة الصوت والرنين (×1.5) ليصبح أقرب لصوت طفلة، ويوحّد مستوى الصوت،
+يوحّد مستوى الصوت،
 ثم (اختياريًا) يتحقق من وضوح كل ملف بتفريغه بنموذج Whisper ومقارنته بالنص.
 """
 import argparse, json, os, re, subprocess, difflib, tempfile
@@ -20,11 +20,11 @@ import numpy as np, soundfile as sf, sherpa_onnx
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.join(ROOT, 'public', 'voice')
 
-def tts(model_dir):
+def tts(model_dir, noise=0.5, noise_w=0.6):
     name = [f for f in os.listdir(model_dir) if f.endswith('.onnx')][0]
     cfg = sherpa_onnx.OfflineTtsConfig(model=sherpa_onnx.OfflineTtsModelConfig(vits=sherpa_onnx.OfflineTtsVitsModelConfig(
         model=os.path.join(model_dir, name), tokens=os.path.join(model_dir, 'tokens.txt'),
-        data_dir=os.path.join(model_dir, 'espeak-ng-data'), noise_scale=0.5, noise_scale_w=0.6), num_threads=4))
+        data_dir=os.path.join(model_dir, 'espeak-ng-data'), noise_scale=noise, noise_scale_w=noise_w), num_threads=4))
     return sherpa_onnx.OfflineTts(cfg)
 
 def strip(t):
@@ -39,12 +39,16 @@ def main():
     ap.add_argument('--asr-dir')
     ap.add_argument('--only', nargs='*')
     ap.add_argument('--speed', type=float, default=0.88)
+    ap.add_argument('--pitch', type=float, default=1.0, help='رفع الطبقة (1.0 = دون تغيير)')
+    ap.add_argument('--noise', type=float, default=0.4)
+    ap.add_argument('--noise-w', type=float, default=0.5)
     ap.add_argument('--takes', type=int, default=3, help='عدد المحاولات لكل جملة؛ يُختار أوضحها حسب Whisper')
     a = ap.parse_args()
     lines = json.load(open(os.path.join(ROOT, 'tools', 'voice', 'lines.json')))
     if a.only: lines = [l for l in lines if l['key'] in a.only]
     os.makedirs(OUT, exist_ok=True)
-    engine = tts(a.model_dir)
+    engine = tts(a.model_dir, a.noise, a.noise_w)
+    shift = f'rubberband=pitch={a.pitch}:formant=shifted:pitchq=quality,' if abs(a.pitch - 1) > 1e-3 else ''
     rec = None
     if a.asr_dir:
         d = a.asr_dir
@@ -62,7 +66,7 @@ def main():
                 sf.write(raw, np.concatenate([pad, np.array(audio.samples, dtype=np.float32), pad]), audio.sample_rate)
                 mp3 = os.path.join(tmp, f'take{take}.mp3')
                 subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', raw, '-af',
-                                'rubberband=pitch=1.5:formant=shifted:pitchq=quality,highpass=f=90,loudnorm=I=-16:TP=-1.5:LRA=11',
+                                shift + 'highpass=f=90,loudnorm=I=-16:TP=-1.5:LRA=11',
                                 '-ar', '24000', '-ac', '1', '-b:a', '48k', mp3], check=True)
                 row = {'key': l['key'], 'text': l['text'], 'seconds': round(len(audio.samples) / audio.sample_rate, 2), 'file': mp3}
                 if rec:
