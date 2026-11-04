@@ -11,6 +11,7 @@ export default defineConfig({
       input: {
         game: resolve(import.meta.dirname, 'index.html'),
         teacher: resolve(import.meta.dirname, 'teacher.html'),
+        record: resolve(import.meta.dirname, 'record.html'),
       },
     },
   },

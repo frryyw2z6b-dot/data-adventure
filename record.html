@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>تسجيل صوت نورة</title>
+  </head>
+  <body>
+    <main class="rec">
+      <header>
+        <h1>تسجيل صوت نورة</h1>
+        <p class="muted">اقرئي كل جملة بصوت واضح وهادئ، ثم اضغطي «التالية». تُحفظ تسجيلاتك في هذا الجهاز حتى لو أغلقتِ الصفحة.</p>
+        <div class="progress"><i id="bar"></i></div>
+        <p id="count" class="muted"></p>
+      </header>
+
+      <section class="card">
+        <p id="line" class="line"></p>
+        <div class="meter"><i id="meter"></i></div>
+        <div class="row">
+          <button id="rec" class="btn primary">● سجّلي</button>
+          <button id="play" class="btn" disabled>▶ استمعي</button>
+          <button id="orig" class="btn ghost">صوت نورة الحالي</button>
+        </div>
+        <p id="status" class="muted" role="status"></p>
+        <div class="row nav">
+          <button id="prev" class="btn ghost">→ السابقة</button>
+          <button id="next" class="btn">التالية ←</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <p><b>عند الانتهاء</b> (أو في أي وقت): نزّلي التسجيلات في ملف واحد وأرسليه في المحادثة.</p>
+        <div class="row">
+          <button id="download" class="btn primary">⬇ تنزيل التسجيلات</button>
+          <button id="first-missing" class="btn ghost">اذهبي لأول جملة غير مسجّلة</button>
+        </div>
+        <p class="muted">نصائح: سجّلي في غرفة هادئة، وقرّبي الجهاز من فمك قليلًا، وانتظري ثانية بعد الضغط قبل أن تبدئي الكلام.</p>
+      </section>
+    </main>
+    <script type="module" src="/src/recorder/main.js"></script>
+  </body>
+</html>

@@ -1,0 +1,118 @@
+:root {
+  --bg: #f6efe3;
+  --card: #fffaf1;
+  --ink: #2f1d12;
+  --muted: #6f5a48;
+  --line: #e6d3b3;
+  --green: #1f6b45;
+  --red: #b3261e;
+  color-scheme: light;
+}
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Baloo Bhaijaan 2', Tahoma, sans-serif;
+}
+.rec {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+h1 {
+  margin: 0;
+  font-size: 1.9rem;
+}
+.muted {
+  color: var(--muted);
+  margin: 4px 0;
+}
+.progress {
+  height: 10px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-top: 8px;
+}
+.progress i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--green);
+  transition: width 0.3s;
+}
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.line {
+  font-size: clamp(1.6rem, 5vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.8;
+  margin: 0;
+  text-align: center;
+}
+.meter {
+  height: 8px;
+  background: var(--line);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.meter i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--red);
+}
+.row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.nav {
+  justify-content: space-between;
+}
+.btn {
+  font: inherit;
+  font-weight: 800;
+  font-size: 1.15rem;
+  border: 0;
+  border-radius: 999px;
+  padding: 10px 20px;
+  min-height: 52px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 3px 0 var(--line);
+  cursor: pointer;
+}
+.btn.primary {
+  background: var(--green);
+  color: #fff;
+}
+.btn.ghost {
+  background: transparent;
+  box-shadow: none;
+  border: 2px solid var(--line);
+}
+.btn.recording {
+  background: var(--red);
+  color: #fff;
+}
+.btn:disabled {
+  opacity: 0.5;
+}
