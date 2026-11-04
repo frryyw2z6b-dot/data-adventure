@@ -129,7 +129,7 @@ export class Audio {
     this.sfx.connect(this.master);
 
     this.musicBus = ctx.createGain();
-    this.musicBus.gain.value = this.musicEnabled ? 0.3 : 0;
+    this.musicBus.gain.value = this.musicEnabled ? this.musicLevel() : 0;
     this.musicBus.connect(this.master);
 
     this.voiceBus = ctx.createGain();
@@ -140,15 +140,16 @@ export class Audio {
     this.voiceBus.connect(this.master);
 
     this.noiseBuf = this.makeNoise();
-    this.echo = ctx.createDelay(1);
-    this.echo.delayTime.value = 0.32;
-    const fb = ctx.createGain();
-    fb.gain.value = 0.28;
-    const lp = ctx.createBiquadFilter();
-    lp.frequency.value = 2200;
-    lp.Q.value = -6;
-    this.echo.connect(lp).connect(fb).connect(this.echo);
-    lp.connect(this.musicBus);
+    // صدى بنقرتين ثابتتين دون حلقة تغذية راجعة (الحلقات غير موثوقة في Safari)
+    this.echo = ctx.createGain();
+    for (const [time, g] of [[0.3, 0.22], [0.6, 0.1]]) {
+      const d = ctx.createDelay(1);
+      d.delayTime.value = time;
+      const dg = ctx.createGain();
+      dg.gain.value = g;
+      this.echo.connect(d).connect(dg).connect(this.musicBus);
+    }
+    this.pluckBuf = this.makePluck(220);
     this.levelBuf = new Float32Array(1024);
     return ctx;
   }
@@ -235,7 +236,7 @@ export class Audio {
   }
 
   musicLevel() {
-    return this.speaking ? 0.1 : 0.3;
+    return this.speaking ? 0.2 : 0.55;
   }
 
   /** مستوى الصوت الخارج الآن (0..1) — للاختبار ولمؤشر «اختبار الصوت» */
@@ -445,42 +446,46 @@ export class Audio {
     src.stop(t + dur + 0.05);
   }
 
-  /** نقرة وترية بطابع العود (Karplus-Strong مبسّط) */
-  pluck(freq, { start = 0, gain = 0.5, dest = null } = {}) {
-    if (!this.ready()) return;
+  /**
+   * نغمة وترية بطابع العود تُحسب مرة واحدة في JavaScript (خوارزمية Karplus-Strong)
+   * ثم تُشغَّل بأي طبقة عبر playbackRate — دون عقد تغذية راجعة داخل Web Audio.
+   */
+  makePluck(base) {
+    const sr = this.ctx.sampleRate;
+    const len = Math.floor(sr * 2.2);
+    const buf = this.ctx.createBuffer(1, len, sr);
+    const out = buf.getChannelData(0);
+    const period = Math.round(sr / base);
+    const ring = new Float32Array(period);
+    for (let i = 0; i < period; i++) ring[i] = Math.random() * 2 - 1;
+    let idx = 0;
+    let peak = 0;
+    for (let i = 0; i < len; i++) {
+      const next = (idx + 1) % period;
+      const v = 0.497 * (ring[idx] + ring[next]);
+      out[i] = ring[idx];
+      ring[idx] = v;
+      idx = next;
+      peak = Math.max(peak, Math.abs(out[i]));
+    }
+    for (let i = 0; i < len; i++) out[i] /= peak || 1;
+    return buf;
+  }
+
+  pluck(freq, { start = 0, gain = 0.5, dest = null, dur = 1.6 } = {}) {
+    if (!this.ready() || !this.pluckBuf) return;
     const t = this.ctx.currentTime + start;
     const src = this.ctx.createBufferSource();
-    src.buffer = this.noiseBuf;
-    const burst = this.ctx.createGain();
-    burst.gain.setValueAtTime(gain, t);
-    burst.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
-    const delay = this.ctx.createDelay(0.05);
-    delay.delayTime.value = 1 / freq;
-    const fb = this.ctx.createGain();
-    fb.gain.value = 0.94;
-    const lp = this.ctx.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = 2400;
-    // بلا رنين: حلقة التغذية الراجعة يجب أن يبقى كسبها أقل من ١ في كل الترددات وإلا انفجر الصوت
-    lp.Q.value = -6;
-    const out = this.ctx.createGain();
-    out.gain.setValueAtTime(1, t);
-    out.gain.exponentialRampToValueAtTime(0.0001, t + 1.8);
-    src.connect(burst).connect(delay);
-    delay.connect(lp).connect(fb).connect(delay);
-    lp.connect(out);
-    out.connect(dest || this.sfx);
-    if (dest === this.musicBus) out.connect(this.echo);
+    src.buffer = this.pluckBuf;
+    src.playbackRate.value = freq / 220;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(g);
+    g.connect(dest || this.sfx);
+    if (dest === this.musicBus) g.connect(this.echo);
     src.start(t);
-    src.stop(t + 0.05);
-    setTimeout(() => {
-      try {
-        out.disconnect();
-        delay.disconnect();
-      } catch {
-        /* ignore */
-      }
-    }, (start + 2.2) * 1000);
+    src.stop(t + dur + 0.05);
   }
 
   tap() {
@@ -522,59 +527,95 @@ export class Audio {
     this.tone(110, { type: 'sine', start, dur: 0.3, gain: 0.5, slideTo: 55, dest });
   }
 
-  // ── الموسيقى الخلفية: نسيم + لحن عود هادئ على مقام الحجاز + دف خفيف ──
+  // ── الموسيقى الخلفية: لحن عود على مقام الحجاز + دف + قرار هادئ + نسيم ──
+  // النغمات في المدى المتوسط (٢٩٠–٥٩٠ هرتز) حتى تُسمع من سماعات الأجهزة اللوحية الصغيرة.
   startAmbience() {
     this.wantMusic = true;
     if (!this.ready() || this.musicOn) return;
     this.musicOn = true;
     const ctx = this.ctx;
-    const src = ctx.createBufferSource();
-    src.buffer = this.noiseBuf;
-    src.loop = true;
-    const f = ctx.createBiquadFilter();
-    f.type = 'bandpass';
-    f.frequency.value = 500;
-    f.Q.value = 0.5;
-    const g = ctx.createGain();
-    g.gain.value = 0.06;
+
+    // نسيم صحراوي
+    const wind = ctx.createBufferSource();
+    wind.buffer = this.noiseBuf;
+    wind.loop = true;
+    const wf = ctx.createBiquadFilter();
+    wf.type = 'bandpass';
+    wf.frequency.value = 700;
+    wf.Q.value = 0.6;
+    const wg = ctx.createGain();
+    wg.gain.value = 0.05;
+    wind.connect(wf).connect(wg).connect(this.musicBus);
+    wind.start();
+
+    // قرار هادئ مستمر (دوكاه وخامستها) يملأ الفراغ بين الجمل
+    const pad = ctx.createGain();
+    pad.gain.value = 0.045;
+    pad.connect(this.musicBus);
+    for (const [f, type] of [[146.83, 'triangle'], [220, 'sine'], [293.66, 'sine']]) {
+      const o = ctx.createOscillator();
+      o.type = type;
+      o.frequency.value = f;
+      o.detune.value = (Math.random() - 0.5) * 8;
+      o.connect(pad);
+      o.start();
+    }
     const lfo = ctx.createOscillator();
-    lfo.frequency.value = 0.08;
-    const lfoGain = ctx.createGain();
-    lfoGain.gain.value = 260;
-    lfo.connect(lfoGain).connect(f.frequency);
-    src.connect(f).connect(g).connect(this.musicBus);
-    src.start();
+    lfo.frequency.value = 0.12;
+    const lg = ctx.createGain();
+    lg.gain.value = 0.015;
+    lfo.connect(lg).connect(pad.gain);
     lfo.start();
 
-    // قرار هادئ مستمر (درون) على الدوكاه
-    const drone = ctx.createOscillator();
-    drone.type = 'triangle';
-    drone.frequency.value = HIJAZ_D[0] / 4;
-    const dg = ctx.createGain();
-    dg.gain.value = 0.05;
-    drone.connect(dg).connect(this.musicBus);
-    drone.start();
-
-    let degree = 0;
+    let degree = 4;
+    const BEAT = 0.42;
     const phrase = () => {
       if (!this.musicOn) return;
-      if (this.ready()) {
-        const notes = 4 + Math.floor(Math.random() * 3);
-        let t = 0;
-        for (let i = 0; i < notes; i++) {
-          degree = Math.max(0, Math.min(7, degree + [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)]));
-          if (i === notes - 1) degree = Math.random() > 0.5 ? 0 : 4;
-          this.pluck(HIJAZ_D[degree] / 2, { start: t, gain: 0.34, dest: this.musicBus });
-          if (Math.random() > 0.7) this.pluck(HIJAZ_D[degree] / 2, { start: t + 0.12, gain: 0.18, dest: this.musicBus });
-          t += [0.36, 0.48, 0.72][Math.floor(Math.random() * 3)];
-        }
-        this.pluck(HIJAZ_D[0] / 4, { start: 0, gain: 0.25, dest: this.musicBus });
-        for (let b = 0; b < t; b += 0.72) this.drum(b, this.musicBus);
-        this.phraseTimer = setTimeout(phrase, (t + 2.2 + Math.random() * 1.6) * 1000);
-      } else {
-        this.phraseTimer = setTimeout(phrase, 1000);
+      if (!this.ready()) {
+        this.phraseTimer = setTimeout(phrase, 800);
+        return;
       }
+      // جملة من ٨ نبضات: لحن متدرّج على مقام الحجاز ينتهي على القرار أو الخامسة
+      const notes = 5 + Math.floor(Math.random() * 3);
+      let t = 0.05;
+      for (let i = 0; i < notes; i++) {
+        degree = Math.max(0, Math.min(7, degree + [-2, -1, -1, 1, 1, 2][Math.floor(Math.random() * 6)]));
+        if (i === notes - 1) degree = Math.random() > 0.5 ? 0 : 4;
+        this.pluck(HIJAZ_D[degree], { start: t, gain: 0.5, dest: this.musicBus });
+        if (Math.random() > 0.65) this.pluck(HIJAZ_D[degree], { start: t + BEAT / 2, gain: 0.28, dest: this.musicBus, dur: 0.8 });
+        t += BEAT * (Math.random() > 0.7 ? 2 : 1);
+      }
+      this.pluck(HIJAZ_D[0] / 2, { start: 0.05, gain: 0.4, dest: this.musicBus, dur: 2 });
+      // إيقاع دف: دُم ... تك تك
+      const bars = Math.ceil(t / (BEAT * 4));
+      for (let bar = 0; bar < bars; bar++) {
+        const b0 = 0.05 + bar * BEAT * 4;
+        this.daf(b0, 'dum');
+        this.daf(b0 + BEAT * 2, 'tak');
+        this.daf(b0 + BEAT * 3, 'tak');
+      }
+      this.phraseTimer = setTimeout(phrase, (bars * BEAT * 4 + 0.6 + Math.random() * 0.8) * 1000);
     };
-    this.phraseTimer = setTimeout(phrase, 400);
+    this.phraseTimer = setTimeout(phrase, 200);
+  }
+
+  daf(start, kind) {
+    if (!this.ready()) return;
+    const t = this.ctx.currentTime + start;
+    if (kind === 'dum') {
+      this.tone(95, { start, dur: 0.28, gain: 0.35, slideTo: 60, dest: this.musicBus });
+    }
+    const src = this.ctx.createBufferSource();
+    src.buffer = this.noiseBuf;
+    const f = this.ctx.createBiquadFilter();
+    f.type = 'bandpass';
+    f.frequency.value = kind === 'dum' ? 900 : 2200;
+    f.Q.value = 1.2;
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(kind === 'dum' ? 0.18 : 0.22, t);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + (kind === 'dum' ? 0.12 : 0.07));
+    src.connect(f).connect(g).connect(this.musicBus);
+    src.start(t, Math.random());
+    src.stop(t + 0.15);
   }
 }
